@@ -1,0 +1,43 @@
+/* ===== Neuvexa ERP theme - NAT-style look. Hooks-only, no core edits. ===== */
+:root{
+  --nvx-teal:#2E9CA8;
+  --nvx-teal-dark:#258a95;
+  --nvx-navy:#1F3864;
+  --nvx-navy-2:#24406f;
+  --nvx-gold:#E9B14C;
+}
+
+/* ---- Dark navy left sidebar (like NAT) ---- */
+.layout-side-section,
+.desk-sidebar,
+.standard-sidebar{ background: var(--nvx-navy) !important; }
+.layout-side-section *,
+.desk-sidebar *{ color:#e8eefc !important; }
+.desk-sidebar svg, .desk-sidebar .icon use,
+.standard-sidebar-item svg{ stroke:#c7d3ef !important; color:#c7d3ef !important; }
+.standard-sidebar-label{ color:#8ea3cf !important; text-transform:uppercase;
+  font-size:11px; letter-spacing:.05em; }
+.standard-sidebar-item{ border-radius:8px; margin:1px 8px; padding-left:6px; }
+.standard-sidebar-item:hover{ background:rgba(255,255,255,.08) !important; }
+.standard-sidebar-item.selected{ background:rgba(46,156,168,.28) !important; }
+.standard-sidebar-item.selected *{ color:#fff !important; }
+
+/* ---- White, clean top navbar ---- */
+.navbar{ background:#fff !important; border-bottom:1px solid #eef1f6 !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04); }
+.navbar .app-logo{ height:28px; width:auto; }
+
+/* ---- Teal primary actions + links ---- */
+.btn-primary{ background:var(--nvx-teal) !important; border-color:var(--nvx-teal) !important; }
+.btn-primary:hover{ background:var(--nvx-teal-dark) !important; border-color:var(--nvx-teal-dark) !important; }
+a, .text-primary{ color:var(--nvx-teal) !important; }
+.indicator-pill.blue{ --indicator-color:var(--nvx-teal); }
+
+/* ---- Rounded, soft cards ---- */
+.widget{ border-radius:14px !important; box-shadow:0 1px 3px rgba(16,24,40,.06) !important;
+  border:1px solid #eef1f6 !important; }
+.form-section, .page-card{ border-radius:12px; }
+
+/* ---- Login / portal page branding ---- */
+.for-login .page-card, .page-card.login-content{ border-radius:16px; }
+.for-login .btn-primary{ background:var(--nvx-teal) !important; }

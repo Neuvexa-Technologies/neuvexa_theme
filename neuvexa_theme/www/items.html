@@ -217,9 +217,16 @@ async function load(){
     bq.set("limit_page_length",0);
     const bins = (await fetch("/api/resource/Bin?"+bq,{credentials:"include"}).then(r=>r.json())).data;
 
-    // only this company's warehouses (GMA)
+    // only this company's warehouses (resolved live from the active company)
+    const COMPANY = (window.NX && NX.company) || "Gulf Mobile & Accessories LLC";
+    const wq=new URLSearchParams();
+    wq.set("fields", JSON.stringify(["name"]));
+    wq.set("filters", JSON.stringify([["company","=",COMPANY]]));
+    wq.set("limit_page_length",0);
+    const whs = (await fetch("/api/resource/Warehouse?"+wq,{credentials:"include"}).then(r=>r.json())).data || [];
+    const whSet = new Set(whs.map(w=>w.name));
     const qm={}, vm={};
-    bins.filter(b=>(b.warehouse||"").indexOf("GMA")>=0).forEach(b=>{
+    bins.filter(b=>whSet.has(b.warehouse)).forEach(b=>{
       qm[b.item_code]=(qm[b.item_code]||0)+(b.actual_qty||0);
       vm[b.item_code]=(vm[b.item_code]||0)+(b.stock_value||0);
     });
@@ -230,7 +237,7 @@ async function load(){
     el("kValue").textContent = AED(ALL.reduce((a,it)=>a+it.value,0));
     el("kLow").textContent = ALL.filter(it=>statusOf(it.qty)!=="ok").length;
     draw();
-    el("srcNote").textContent = "Live · Neuvexa ERP · Gulf Mobile & Accessories LLC";
+    el("srcNote").textContent = "Live · Neuvexa ERP · " + COMPANY;
   }catch(e){
     el("rows").innerHTML='<tr><td colspan="6" class="empty">Could not load items ('+e.message+') &mdash; sign in to the ERP first.</td></tr>';
     el("srcNote").textContent = "Could not load live data";

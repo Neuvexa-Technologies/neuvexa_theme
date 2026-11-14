@@ -266,6 +266,7 @@
     { group:"Actions", title:"New item", sub:"Add a stock item", tint:"#16a34a", icon:ACT_PLUS, run:function(){ NX.newDoc("item"); } },
     { group:"Actions", title:"Ask Neuvexa", sub:"AI answers from your data", tint:"#6d5ef5", icon:ACT_SPARK, run:function(){ NX.openCopilot(); } },
     { group:"Actions", title:"Toggle dark mode", sub:"Switch light / dark", tint:"#e9a23b", icon:ACT_MOON, run:function(){ NX.toggleDark(); } },
+    { group:"Actions", title:"Toggle compact rows", sub:"Denser tables", tint:"#0ea5a4", icon:'<path d="M3 6h18M3 12h18M3 18h18"/>', run:function(){ NX.toggleDensity(); } },
     { group:"Go to", title:"Dashboard", sub:"/neuvexa", tint:"#2563EB", icon:ACT_ARROW, nav:"/neuvexa" },
     { group:"Go to", title:"Invoices", sub:"/invoices", tint:"#2563EB", icon:ACT_ARROW, nav:"/invoices" },
     { group:"Go to", title:"Customers", sub:"/customers", tint:"#2563EB", icon:ACT_ARROW, nav:"/customers" },
@@ -793,9 +794,14 @@
     // polished empty states
     + ".nx-empty{padding:34px 16px;text-align:center;color:var(--muted,#8a94a6);}"
     + ".nx-empty .nx-empty-ic{width:34px;height:34px;stroke:#c3ccdb;margin:0 auto 9px;display:block;}html.nx-dark .nx-empty .nx-empty-ic{stroke:#3a455f;}"
-    + ".nx-empty div{font-size:13px;}";
+    + ".nx-empty div{font-size:13px;}"
+    + "html.nx-compact .panel tbody td{padding-top:7px;padding-bottom:7px;}"
+    + "html.nx-compact .panel thead th{padding-top:9px;padding-bottom:9px;}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
   }
+  function applyDensity(){ try { document.documentElement.classList.toggle("nx-compact", localStorage.getItem("nx_compact")==="1"); } catch(e){} }
+  function toggleDensity(){ try { localStorage.setItem("nx_compact", (localStorage.getItem("nx_compact")==="1")?"0":"1"); } catch(e){} applyDensity(); toast(document.documentElement.classList.contains("nx-compact")?"Compact rows on":"Comfortable rows on","info"); }
+  NX.toggleDensity = toggleDensity;
 
   // ---- Revenue sparkline (6-month trend) ----------------------------------
   async function wireSparkline(){
@@ -1073,6 +1079,36 @@
       if(/supplier|vendor/.test(s)){ var r=await rows("Supplier",["name"]); return {title:"Suppliers", big:""+r.length}; }
       if(/invoice/.test(s)){ var r=await rows("Sales Invoice",["name"],[["company","=",co]]); return {title:"Invoices", big:""+r.length}; }
     }
+    // this week's sales
+    if(/this week|past week|last 7 days|weekly sales|week.s sales/.test(s)){
+      var d=new Date(), wd=d.getDay(), monday=new Date(d); monday.setDate(d.getDate()-((wd+6)%7));
+      var ws=monday.getFullYear()+"-"+("0"+(monday.getMonth()+1)).slice(-2)+"-"+("0"+monday.getDate()).slice(-2);
+      var r=await rows("Sales Invoice",["grand_total"],[["company","=",co],["docstatus","=",1],["posting_date",">=",ws]]);
+      var t=r.reduce(function(a,x){return a+(x.grand_total||0);},0);
+      return {title:"Sales this week", big:money(t), note:r.length+" invoice"+(r.length===1?"":"s")+" since "+ws+".", followups:["Revenue this month","Top customers"]};
+    }
+    // average invoice value
+    if(/average invoice|avg invoice|average sale|mean invoice/.test(s)){
+      var r=await rows("Sales Invoice",["grand_total"],[["company","=",co],["docstatus","=",1]]);
+      var t=r.reduce(function(a,x){return a+(x.grand_total||0);},0), avg=r.length?t/r.length:0;
+      return {title:"Average invoice value", big:money(avg), note:"Across "+r.length+" submitted invoice"+(r.length===1?"":"s")+".", followups:["Revenue this month","Top customers"]};
+    }
+    // how much does <customer> owe
+    var owe=s.match(/(?:how much does|does|how much is|what does)\s+(.+?)\s+(?:owe|owes|outstanding|balance)/);
+    if(!owe) owe=s.match(/(?:balance|owed|outstanding|owing) (?:of|for|by)\s+(.+)/);
+    if(owe){
+      var nameq=owe[1].trim().replace(/[?.!]+$/,"");
+      var custs=await rows("Customer",["name","customer_name"],[["customer_name","like","%"+nameq+"%"]],{limit:"1"});
+      if(custs.length){
+        var cn=custs[0].name;
+        var inv=await rows("Sales Invoice",["grand_total","outstanding_amount","name","status"],[["company","=",co],["docstatus","=",1],["customer","=",cn]],{order:"posting_date desc"});
+        var outAmt=inv.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
+        var billed=inv.reduce(function(a,x){return a+(x.grand_total||0);},0);
+        var rowsList=inv.slice(0,5).map(function(x){return {a:x.name+(x.status?" · "+x.status:""), b:money(x.outstanding_amount||0)};});
+        return {title:custs[0].customer_name+" — balance", big:money(outAmt)+" outstanding", rows:rowsList, note:"Billed "+money(billed)+" across "+inv.length+" invoice"+(inv.length===1?"":"s")+".", followups:["Who’s overdue?","Top customers"]};
+      }
+      return {title:null, note:"I couldn’t find a customer matching “"+nameq+"”."};
+    }
     // find / search fallback
     var term=q.replace(/^(find|search|show me|look up|lookup|where is|who is)\s+/i,"").trim();
     if(term && term.length>=2){
@@ -1089,6 +1125,7 @@
     if(a.big) h+='<span class="big">'+esc(a.big)+'</span>';
     if(a.rows&&a.rows.length) h+=a.rows.map(function(r){return '<div class="rw"><span>'+esc(r.a)+'</span><b>'+esc(r.b)+'</b></div>';}).join("");
     if(a.note) h+='<div style="margin-top:6px;color:#8a94a6;font-size:12px;">'+esc(a.note)+'</div>';
+    if(a.followups&&a.followups.length) h+='<div class="chips" style="margin-top:9px;">'+a.followups.map(function(f){return '<div class="chip">'+esc(f)+'</div>';}).join("")+'</div>';
     return h;
   }
   function openCopilot(){
@@ -1158,6 +1195,7 @@
     injectAiCSS();
     applyTheme();
     applyDark();
+    applyDensity();
     wireDarkMode();
     wireResponsive();
     buildSwitcher();

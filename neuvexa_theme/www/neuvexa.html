@@ -272,12 +272,15 @@ async function load(){
       renderBars("topItems", topI, barColor);
     }catch(e){ el("topItems").innerHTML='<div class="pr"><div class="tp"><b>No item data</b></div></div>'; }
 
-    // stock value
+    // stock value — scoped to THIS company's warehouses (Bin has no company field)
     try{
-      const bins = await getList("Bin", ["stock_value"], null, 0);
-      const sv = bins.reduce((a,b)=>a+(b.stock_value||0),0);
+      const whs = await getList("Warehouse", ["name"], [["company","=",COMPANY]], 0);
+      const whSet = new Set(whs.map(w=>w.name));
+      const bins = await getList("Bin", ["warehouse","stock_value"], null, 0);
+      const mine = bins.filter(b=>whSet.has(b.warehouse));
+      const sv = mine.reduce((a,b)=>a+(b.stock_value||0),0);
       el("kStock").textContent = AED(sv);
-      el("kStockSub").textContent = bins.length+" stock records";
+      el("kStockSub").textContent = mine.length+" stock records";
     }catch(e){ el("kStock").textContent="—"; }
 
     el("srcNote").textContent = "Live · Neuvexa ERP · "+COMPANY;

@@ -35,6 +35,119 @@
     var s = document.querySelector(".brand .txt span"); if (s && CONFIG.tagline) s.textContent = CONFIG.tagline;
   }
 
+  // ---- Dark "cockpit" mode ------------------------------------------------
+  var LS_DARK = "nx_dark";
+  function isDark(){ try { return localStorage.getItem(LS_DARK) === "1"; } catch(e){ return false; } }
+  function applyDark(){ document.documentElement.classList.toggle("nx-dark", isDark()); updateDarkBtn(); }
+  function toggleDark(){ try { localStorage.setItem(LS_DARK, isDark() ? "0" : "1"); } catch(e){} applyDark(); }
+  NX.toggleDark = toggleDark;
+  var _darkBtn=null;
+  var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>';
+  function updateDarkBtn(){ if(_darkBtn) _darkBtn.innerHTML = isDark() ? SUN : MOON; }
+  function wireDarkMode(){
+    var acts = document.querySelector(".top-actions"); if(!acts) return;
+    _darkBtn = document.createElement("button");
+    _darkBtn.className = "bell nx-darktoggle"; _darkBtn.title = "Toggle dark mode";
+    _darkBtn.addEventListener("click", toggleDark);
+    acts.insertBefore(_darkBtn, acts.firstChild);
+    updateDarkBtn();
+  }
+  function injectDarkCSS(){
+    var d = "html.nx-dark";
+    var css = ""
+    + d+"{--bg:#0a0e1a;--card:#111728;--ink:#e8edf7;--ink2:#c7d0e2;--muted:#808bA1;--muted2:#5f6b82;--line:#1c2437;--line2:#283350;--navy:#eef2fb;}"
+    + d+" body{background:radial-gradient(1100px 560px at 82% -12%,rgba(37,99,235,.12),transparent),radial-gradient(900px 500px at 0% 110%,rgba(109,94,245,.10),transparent),var(--bg);color:var(--ink);}"
+    + d+" .topbar{background:#0d1324;border-bottom-color:var(--line2);}"
+    + d+" .search{background:#0a0f1e;border-color:var(--line2);color:var(--muted);}"
+    + d+" .search svg{stroke:var(--muted2);}"
+    + d+" .wswitch{border-color:var(--line2);background:#0d1324;}"
+    + d+" .wswitch .l b{color:var(--ink);}"
+    + d+" .bell,"+d+" .nx-darktoggle{background:#0d1324;border-color:var(--line2);}"
+    + d+" .bell svg,"+d+" .nx-darktoggle svg{stroke:#9aa6bd;}"
+    + d+" .nx-darktoggle{cursor:pointer;}"
+    + d+" .ask{background:rgba(37,99,235,.16);color:#9ec2ff;}"
+    + d+" .me .l b{color:var(--ink);}"
+    + d+" .page-head h1{color:var(--navy);}"
+    + d+" .kpi,"+d+" .panel{background:var(--card);border-color:var(--line2);box-shadow:0 1px 2px rgba(0,0,0,.45),0 0 0 1px rgba(37,99,235,.05);}"
+    + d+" .kpi .val{color:var(--navy);}"
+    + d+" thead th{background:#0e1527;color:var(--muted);border-bottom-color:var(--line2);}"
+    + d+" tbody td{border-bottom-color:var(--line);color:var(--ink2);}"
+    + d+" tbody tr:hover td{background:rgba(37,99,235,.09);}"
+    + d+" .btn{background:#0d1324;color:var(--ink2);border-color:var(--line2);}"
+    + d+" .btn svg{stroke:#9aa6bd;}"
+    + d+" .finder{background:#0d1324;border-color:var(--line2);}"
+    + d+" .finder input{color:var(--ink);background:transparent;}"
+    + d+" .tag{background:#1a2238;color:#aab6cc;}"
+    + d+" .cust b{color:var(--navy);}"
+    + d+" .src{background:rgba(10,14,26,.82);border-color:var(--line2);color:#6b7791;}"
+    // overlays
+    + d+" .nx-drawer,"+d+" .nx-menu,"+d+" .nx-pal{background:#111728;border-color:var(--line2);color:var(--ink);}"
+    + d+" .nx-menu .nx-mi{color:var(--ink2);}"
+    + d+" .nx-menu .nx-mi:hover,"+d+" .nx-menu .nx-mi.on{background:rgba(37,99,235,.14);}"
+    + d+" .nx-drawer .dh h2,"+d+" .nx-pal .r b{color:var(--ink);}"
+    + d+" .nx-drawer .fr{border-bottom-color:var(--line);}"
+    + d+" .nx-drawer .fr .v{color:var(--ink2);}"
+    + d+" .nx-drawer .fr .v.big{color:var(--ink);}"
+    + d+" .nx-drawer .dh,"+d+" .nx-drawer .df,"+d+" .nx-pal .hd,"+d+" .nx-pal .bd{border-color:var(--line);}"
+    + d+" .nx-drawer .dh .x,"+d+" .nx-drawer .df a{background:#0d1324;border-color:var(--line2);color:var(--ink2);}"
+    + d+" .nx-drawer .df a.pri{background:var(--blue);color:#fff;}"
+    + d+" .nx-pal .hd input{color:var(--ink);}"
+    + d+" .nx-pal .hd svg{stroke:var(--muted);}"
+    + d+" .nx-pal .r:hover,"+d+" .nx-pal .r.sel{background:rgba(37,99,235,.14);}"
+    + d+" .nx-form .ff input,"+d+" .nx-form .ff select,"+d+" .nx-form .ff textarea{background:#0d1324;border-color:var(--line2);color:var(--ink);}"
+    + d+" .nx-form .lg{background:#0d1324;border-color:var(--line2);}"
+    + d+" .nx-form .lg-row select,"+d+" .nx-form .lg-row input{background:#0a0f1e;border-color:var(--line2);color:var(--ink);}"
+    + d+" .nx-form .lg-add{background:#0d1324;}"
+    + d+" .nx-form .lg-tot b{color:var(--ink);}";
+    var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+
+  // ---- Responsive (tablet / phone) ---------------------------------------
+  function injectResponsiveCSS(){
+    var css = ""
+    + ".nx-burger{display:none;width:38px;height:38px;border-radius:9px;border:1px solid var(--line2,#e6eaf1);background:#fff;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}"
+    + ".nx-burger svg{width:18px;height:18px;stroke:#5a6578;}"
+    + ".nx-backdrop{position:fixed;inset:0;background:rgba(10,14,26,.45);z-index:88;opacity:0;pointer-events:none;transition:opacity .2s;}"
+    + "html.nx-sb-open .nx-backdrop{opacity:1;pointer-events:auto;}"
+    + "@media(max-width:920px){"
+    + "  .kpis{grid-template-columns:repeat(2,1fr)!important;}"
+    + "}"
+    + "@media(max-width:760px){"
+    + "  .nx-burger{display:flex;}"
+    + "  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .24s cubic-bezier(.4,0,.2,1);z-index:92;box-shadow:0 0 60px rgba(0,0,0,.4);}"
+    + "  html.nx-sb-open .sidebar{transform:none;}"
+    + "  .topbar{gap:10px;padding:0 14px;}"
+    + "  .wswitch{min-width:0;flex:1;max-width:none;padding:7px 10px;}"
+    + "  .wswitch .l span{display:none;}"
+    + "  .search{display:none;}"
+    + "  .top-actions{gap:9px;}"
+    + "  .me .l{display:none;}"
+    + "  .ask span,.ask{font-size:0;padding:8px;}"
+    + "  .ask svg{width:17px;height:17px;}"
+    + "  .content{padding:16px 14px;}"
+    + "  .page-head{flex-direction:column;gap:12px;}"
+    + "  .page-head h1{font-size:20px;}"
+    + "  .kpis{grid-template-columns:1fr!important;}"
+    + "  .panel{overflow-x:auto;}"
+    + "  table{min-width:560px;}"
+    + "  .nx-pal{width:94vw;top:64px;}"
+    + "  .nx-drawer,.nx-form{width:100vw;max-width:100vw;}"
+    + "}";
+    var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+  function wireResponsive(){
+    var tb = document.querySelector(".topbar"); if(!tb) return;
+    var burger = document.createElement("button");
+    burger.className = "nx-burger"; burger.title = "Menu";
+    burger.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+    burger.addEventListener("click", function(e){ e.stopPropagation(); document.documentElement.classList.toggle("nx-sb-open"); });
+    tb.insertBefore(burger, tb.firstChild);
+    var bd = document.createElement("div"); bd.className = "nx-backdrop";
+    bd.addEventListener("click", function(){ document.documentElement.classList.remove("nx-sb-open"); });
+    document.body.appendChild(bd);
+  }
+
   // ---- Injected styles ----------------------------------------------------
   function injectCSS(){
     var css = ""
@@ -509,10 +622,28 @@
   }
 
   // ---- Boot ---------------------------------------------------------------
+  // ---- Auth gate: send guests to the branded login -----------------------
+  function guardAuth(){
+    var m = document.cookie.match(/(?:^|;\s*)user_id=([^;]+)/);
+    var uid = m ? decodeURIComponent(m[1]) : "";
+    if(!uid || uid === "Guest"){
+      var here = location.pathname + location.search;
+      location.replace("/neuvexa_login?redirect-to=" + encodeURIComponent(here));
+      return false;
+    }
+    return true;
+  }
+
   function boot(){
+    if(!guardAuth()) return;
     injectCSS();
     injectFormCSS();
+    injectDarkCSS();
+    injectResponsiveCSS();
     applyTheme();
+    applyDark();
+    wireDarkMode();
+    wireResponsive();
     buildSwitcher();
     wirePalette();
     wireDrawers();

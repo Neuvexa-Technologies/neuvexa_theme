@@ -740,6 +740,10 @@
     + ".nx-cop .bub.ai .rw:first-of-type{border-top:none;}"
     + ".nx-cop .bub.ai .rw b{font-weight:700;white-space:nowrap;flex:0 0 auto;}"
     + ".nx-cop .bub.ai .rw span{min-width:0;overflow-wrap:anywhere;}"
+    + ".nx-cop .bub.ai .rwbar{height:4px;border-radius:999px;background:rgba(0,0,0,.06);overflow:hidden;margin:0 0 5px;}"
+    + "html.nx-dark .nx-cop .bub.ai .rwbar{background:rgba(255,255,255,.09);}"
+    + ".nx-cop .bub.ai .rwbar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue,#2563EB),var(--accent2,#6d5ef5));transform-origin:left;animation:nxbar .5s cubic-bezier(.4,0,.2,1) both;}"
+    + "@keyframes nxbar{from{transform:scaleX(0);}}"
     + ".nx-cop .chips{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 0;}"
     + ".nx-cop .chip{border:1px solid var(--line2,#e6eaf1);background:#fff;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--blue-ink,#1e40af);cursor:pointer;}html.nx-dark .nx-cop .chip{background:#0d1324;border-color:var(--line2);color:#9ec2ff;}"
     + ".nx-cop .chip:hover{background:var(--blue-soft,#eaf0fe);}html.nx-dark .nx-cop .chip:hover{background:#17213c;}"
@@ -1141,21 +1145,21 @@
     if(/receivable|outstanding|owed to me|who owes|unpaid|owing/.test(s) && !/supplier|pay|bill/.test(s)){
       var r=await rows("Sales Invoice",["customer","outstanding_amount","due_date","name"],[["company","=",co],["docstatus","=",1],["outstanding_amount",">",0]],{order:"outstanding_amount desc"});
       var t=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
-      var top=r.slice(0,5).map(function(x){return {a:x.customer, b:money(x.outstanding_amount)};});
+      var top=r.slice(0,5).map(function(x){return {a:x.customer, b:money(x.outstanding_amount), v:x.outstanding_amount};});
       return {title:"Total receivables", big:money(t), rows:top, note:r.length+" open invoice"+(r.length===1?"":"s")+"."};
     }
     // overdue
     if(/overdue|late|past due/.test(s)){
       var r=await rows("Sales Invoice",["customer","outstanding_amount","due_date","name"],[["company","=",co],["docstatus","=",1],["outstanding_amount",">",0],["due_date","<",todayStr()]],{order:"due_date asc"});
       var t=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
-      var top=r.slice(0,6).map(function(x){return {a:x.customer+" · "+x.name, b:money(x.outstanding_amount)};});
+      var top=r.slice(0,6).map(function(x){return {a:x.customer+" · "+x.name, b:money(x.outstanding_amount), v:x.outstanding_amount};});
       return {title:"Overdue", big:money(t)+" across "+r.length, rows:top, note:r.length?"Oldest first.":"Nothing overdue — nice."};
     }
     // payables / bills
     if(/payable|bills? (due|to pay)|owe (supplier|to)|supplier.*owe|accounts payable/.test(s) || (/payable|owe/.test(s)&&/supplier|bill/.test(s))){
       var r=await rows("Purchase Invoice",["supplier","outstanding_amount"],[["company","=",co],["docstatus","=",1],["outstanding_amount",">",0]],{order:"outstanding_amount desc"});
       var t=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
-      var top=r.slice(0,5).map(function(x){return {a:x.supplier, b:money(x.outstanding_amount)};});
+      var top=r.slice(0,5).map(function(x){return {a:x.supplier, b:money(x.outstanding_amount), v:x.outstanding_amount};});
       return {title:"Total payables", big:money(t), rows:top, note:r.length+" bill"+(r.length===1?"":"s")+" to pay."};
     }
     // top customers
@@ -1207,7 +1211,7 @@
         var inv=await rows("Sales Invoice",["grand_total","outstanding_amount","name","status"],[["company","=",co],["docstatus","=",1],["customer","=",cn]],{order:"posting_date desc"});
         var outAmt=inv.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
         var billed=inv.reduce(function(a,x){return a+(x.grand_total||0);},0);
-        var rowsList=inv.slice(0,5).map(function(x){return {a:x.name+(x.status?" · "+x.status:""), b:money(x.outstanding_amount||0)};});
+        var rowsList=inv.slice(0,5).map(function(x){return {a:x.name+(x.status?" · "+x.status:""), b:money(x.outstanding_amount||0), v:x.outstanding_amount||0};});
         return {title:custs[0].customer_name+" — balance", big:money(outAmt)+" outstanding", rows:rowsList, note:"Billed "+money(billed)+" across "+inv.length+" invoice"+(inv.length===1?"":"s")+".", followups:["Who’s overdue?","Top customers"]};
       }
       return {title:null, note:"I couldn’t find a customer matching “"+nameq+"”."};
@@ -1225,7 +1229,7 @@
       var r=await rows("Quotation",["grand_total","party_name","status","name"],[["company","=",co]],{order:"transaction_date desc"});
       var open=r.filter(function(x){return x.status!=="Lost" && x.status!=="Expired";});
       var t=open.reduce(function(a,x){return a+(x.grand_total||0);},0);
-      var top=open.slice(0,5).map(function(x){return {a:(x.party_name||x.name)+(x.status?" · "+x.status:""), b:money(x.grand_total||0)};});
+      var top=open.slice(0,5).map(function(x){return {a:(x.party_name||x.name)+(x.status?" · "+x.status:""), b:money(x.grand_total||0), v:x.grand_total||0};});
       return {title:"Open quotations", big:money(t)+" · "+open.length, rows:top, note:r.length+" quotation"+(r.length===1?"":"s")+" total.", followups:["Top customers","Revenue this month"]};
     }
     // new customers this month
@@ -1238,7 +1242,7 @@
     if(/biggest invoice|largest invoice|highest invoice|biggest sale|largest sale/.test(s)){
       var r=await rows("Sales Invoice",["name","customer","grand_total"],[["company","=",co],["docstatus","=",1]],{order:"grand_total desc", limit:"5"});
       if(!r.length) return {title:null, note:"No submitted invoices yet."};
-      var top=r.map(function(x){return {a:x.customer+" · "+x.name, b:money(x.grand_total||0)};});
+      var top=r.map(function(x){return {a:x.customer+" · "+x.name, b:money(x.grand_total||0), v:x.grand_total||0};});
       return {title:"Biggest invoices", big:money(r[0].grand_total||0), rows:top, followups:["Top customers","Average invoice value"]};
     }
     // invoices due soon (next 7 days)
@@ -1247,7 +1251,7 @@
       var d7=d7d.getFullYear()+"-"+("0"+(d7d.getMonth()+1)).slice(-2)+"-"+("0"+d7d.getDate()).slice(-2);
       var r=await rows("Sales Invoice",["customer","outstanding_amount","due_date","name"],[["company","=",co],["docstatus","=",1],["outstanding_amount",">",0],["due_date",">=",d0],["due_date","<=",d7]],{order:"due_date asc"});
       var t=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
-      var top=r.slice(0,6).map(function(x){return {a:x.customer+" · "+(""+x.due_date).slice(0,10), b:money(x.outstanding_amount||0)};});
+      var top=r.slice(0,6).map(function(x){return {a:x.customer+" · "+(""+x.due_date).slice(0,10), b:money(x.outstanding_amount||0), v:x.outstanding_amount||0};});
       return {title:"Due in the next 7 days", big:money(t)+" · "+r.length, rows:top, note:r.length?"Soonest first.":"Nothing due in the next 7 days.", followups:["Who’s overdue?","Collection rate"]};
     }
     // top supplier / biggest supplier by spend
@@ -1256,7 +1260,7 @@
       if(!r.length) return {title:null, note:"No submitted purchase invoices yet."};
       var m={}; r.forEach(function(x){ m[x.supplier]=(m[x.supplier]||0)+(x.grand_total||0); });
       var arr=Object.keys(m).map(function(k){return {a:k,b:money(m[k]),v:m[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,5);
-      return {title:"Top suppliers by spend", big:arr[0].a, rows:arr.map(function(x){return {a:x.a,b:x.b};}), note:"Across "+r.length+" purchase invoice"+(r.length===1?"":"s")+".", followups:["Payables","Revenue this month"]};
+      return {title:"Top suppliers by spend", big:arr[0].a, rows:arr.map(function(x){return {a:x.a,b:x.b,v:x.v};}), note:"Across "+r.length+" purchase invoice"+(r.length===1?"":"s")+".", followups:["Payables","Revenue this month"]};
     }
     // paid vs unpaid invoice counts
     if(/how many (paid|unpaid|settled|fully paid)|paid invoices|unpaid invoices|settled invoices/.test(s)){
@@ -1278,7 +1282,14 @@
     var h="";
     if(a.title) h+='<b style="display:block;margin-bottom:2px;">'+esc(a.title)+'</b>';
     if(a.big) h+='<span class="big">'+esc(a.big)+'</span>';
-    if(a.rows&&a.rows.length) h+=a.rows.map(function(r){return '<div class="rw"><span>'+esc(r.a)+'</span><b>'+esc(r.b)+'</b></div>';}).join("");
+    if(a.rows&&a.rows.length){
+      var maxV = Math.max.apply(null, a.rows.map(function(r){ return (typeof r.v==="number" && isFinite(r.v) && r.v>0) ? r.v : 0; }).concat([0]));
+      h += a.rows.map(function(r){
+        var bar = (typeof r.v==="number" && isFinite(r.v) && r.v>0 && maxV>0)
+          ? '<div class="rwbar"><i style="width:'+Math.max(4, Math.round(r.v/maxV*100))+'%"></i></div>' : '';
+        return '<div class="rw"><span>'+esc(r.a)+'</span><b>'+esc(r.b)+'</b></div>'+bar;
+      }).join("");
+    }
     if(a.note) h+='<div style="margin-top:6px;color:#8a94a6;font-size:12px;">'+esc(a.note)+'</div>';
     if(a.followups&&a.followups.length) h+='<div class="chips" style="margin-top:9px;">'+a.followups.map(function(f){return '<div class="chip">'+esc(f)+'</div>';}).join("")+'</div>';
     return h;

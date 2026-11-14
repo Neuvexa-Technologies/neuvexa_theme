@@ -254,13 +254,269 @@
     }, true); // capture phase — runs before the inline onclick
   }
 
+  // ---- Toasts -------------------------------------------------------------
+  var _toastWrap=null;
+  function toast(msg, kind){
+    if(!_toastWrap){ _toastWrap=document.createElement("div"); _toastWrap.className="nx-toasts"; document.body.appendChild(_toastWrap); }
+    var t=document.createElement("div"); t.className="nx-toast "+(kind||"ok");
+    var ic = kind==="err" ? "&#10005;" : (kind==="info" ? "&#8505;" : "&#10003;");
+    t.innerHTML='<span class="ti">'+ic+'</span><span class="tm">'+esc(msg)+'</span>';
+    _toastWrap.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add("show"); });
+    setTimeout(function(){ t.classList.remove("show"); setTimeout(function(){ t.remove(); }, 260); }, 3800);
+  }
+  NX.toast = toast;
+
+  // ---- CSRF + write helpers ----------------------------------------------
+  var _csrf=null;
+  async function csrf(){
+    if(_csrf) return _csrf;
+    try{ var html = await (await fetch("/app",{credentials:"include"})).text();
+      var m = html.match(/csrf_token\s*[=:]\s*["']([^"']+)["']/); _csrf = m ? m[1] : "None";
+    }catch(e){ _csrf="None"; }
+    return _csrf;
+  }
+  NX.csrf = csrf;
+  function serverMsg(j){
+    try{ if(j._server_messages){ var arr=JSON.parse(j._server_messages); return arr.map(function(s){ try{ return JSON.parse(s).message; }catch(e){ return s; } }).join(" "); } }catch(e){}
+    if(j.exception) return (""+j.exception).replace(/^[^:]*:\s*/,"");
+    return null;
+  }
+  async function createDoc(doctype, payload){
+    var token = await csrf();
+    var r = await fetch("/api/resource/"+encodeURIComponent(doctype),{
+      method:"POST", credentials:"include",
+      headers:{"Content-Type":"application/json","X-Frappe-CSRF-Token":token},
+      body: JSON.stringify(payload)
+    });
+    var j = await r.json().catch(function(){ return {}; });
+    if(!r.ok || !j.data) throw new Error(serverMsg(j) || ("Could not save ("+r.status+")"));
+    return j.data;
+  }
+  NX.create = createDoc;
+  async function submitDoc(doctype, name){
+    try{
+      var token = await csrf();
+      var doc = (await api("/api/resource/"+encodeURIComponent(doctype)+"/"+encodeURIComponent(name))).data;
+      var r = await fetch("/api/method/frappe.client.submit",{
+        method:"POST", credentials:"include",
+        headers:{"Content-Type":"application/json","X-Frappe-CSRF-Token":token},
+        body: JSON.stringify({ doc: JSON.stringify(doc) })
+      });
+      return r.ok;
+    }catch(e){ return false; }
+  }
+
+  // ---- Create-form engine -------------------------------------------------
+  function today(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+  var ITEMCACHE=null;
+  async function itemOptions(){
+    if(ITEMCACHE) return ITEMCACHE;
+    var p=new URLSearchParams(); p.set("fields", JSON.stringify(["name","item_name","standard_rate"])); p.set("limit_page_length","0");
+    ITEMCACHE = ((await api("/api/resource/Item?"+p)).data)||[];
+    return ITEMCACHE;
+  }
+  async function sourceOptions(src){
+    var lbl = src.label || "name";
+    var fields = lbl==="name" ? ["name"] : ["name",lbl];
+    var p=new URLSearchParams(); p.set("fields", JSON.stringify(fields));
+    if(src.filters) p.set("filters", JSON.stringify(src.filters));
+    if(src.company) p.set("filters", JSON.stringify((src.filters||[]).concat([["company","=",NX.company]])));
+    p.set("limit_page_length","0"); p.set("order_by", lbl+" asc");
+    var rows = ((await api("/api/resource/"+encodeURIComponent(src.doctype)+"?"+p)).data)||[];
+    return rows.map(function(r){ return { value:r.name, label:r[lbl]||r.name }; });
+  }
+
+  NX.openForm = async function(spec){
+    var mask=document.createElement("div"); mask.className="nx-mask";
+    var dr=document.createElement("div"); dr.className="nx-drawer nx-form";
+    dr.innerHTML='<div class="dh"><div class="tp"><span class="kind">New record</span><div class="x">&times;</div></div><h2>'+esc(spec.title||"New record")+'</h2></div>'
+      +'<div class="db"><div class="nx-pulse">Loading form&hellip;</div></div>'
+      +'<div class="df"><a class="cancelbtn">Cancel</a><a class="pri createbtn">Create</a></div>';
+    document.body.appendChild(mask); document.body.appendChild(dr);
+    function close(){ mask.classList.remove("show"); dr.classList.remove("show"); setTimeout(function(){ dr.remove(); mask.remove(); }, 220); }
+    dr.querySelector(".x").addEventListener("click", close);
+    dr.querySelector(".cancelbtn").addEventListener("click", close);
+    mask.addEventListener("click", close);
+    requestAnimationFrame(function(){ mask.classList.add("show"); dr.classList.add("show"); });
+
+    // resolve select sources + item options in parallel
+    var selFields = spec.fields.filter(function(f){ return f.type==="select" && f.source; });
+    var needItems = spec.fields.some(function(f){ return f.type==="items"; });
+    try{
+      var loaded = await Promise.all(selFields.map(function(f){ return sourceOptions(f.source); }).concat(needItems?[itemOptions()]:[]));
+      selFields.forEach(function(f,i){ f._opts = loaded[i]; });
+      var items = needItems ? loaded[loaded.length-1] : [];
+
+      var body = dr.querySelector(".db"); body.innerHTML="";
+      spec.fields.forEach(function(f){
+        var wrap=document.createElement("div"); wrap.className="ff";
+        var lab='<label>'+esc(f.label)+(f.required?' <i>*</i>':'')+'</label>';
+        if(f.type==="items"){
+          wrap.innerHTML=lab+'<div class="lg"><div class="lg-rows"></div><button type="button" class="lg-add">+ Add line</button><div class="lg-tot">Total <b>AED 0</b></div></div>';
+          wrap._kind="items";
+        } else if(f.type==="select"){
+          var opts = (f._opts || (f.options||[]).map(function(o){ return {value:o,label:o}; }));
+          var sel='<select data-k="'+f.key+'"'+(f.required?' data-req="1"':'')+'>';
+          sel+='<option value="">Select&hellip;</option>';
+          opts.forEach(function(o){ sel+='<option value="'+esc(o.value)+'"'+(f.default===o.value?' selected':'')+'>'+esc(o.label)+'</option>'; });
+          sel+='</select>'; wrap.innerHTML=lab+sel;
+        } else if(f.type==="textarea"){
+          wrap.innerHTML=lab+'<textarea data-k="'+f.key+'"'+(f.required?' data-req="1"':'')+' placeholder="'+esc(f.placeholder||"")+'"></textarea>';
+        } else {
+          var it = f.type==="number" ? "number" : (f.type==="date"?"date":"text");
+          wrap.innerHTML=lab+'<input type="'+it+'" data-k="'+f.key+'"'+(f.required?' data-req="1"':'')+' placeholder="'+esc(f.placeholder||"")+'" value="'+esc(f.default||(f.type==="date"?today():""))+'">';
+        }
+        body.appendChild(wrap);
+      });
+
+      // line-items grid behaviour
+      var grid = body.querySelector(".lg");
+      if(grid){
+        var rowsEl = grid.querySelector(".lg-rows"), totEl = grid.querySelector(".lg-tot b");
+        function addRow(){
+          var row=document.createElement("div"); row.className="lg-row";
+          var osel='<option value="">Item&hellip;</option>'+items.map(function(o){ return '<option value="'+esc(o.name)+'" data-rate="'+(o.standard_rate||0)+'">'+esc(o.item_name||o.name)+'</option>'; }).join("");
+          row.innerHTML='<select class="li-item">'+osel+'</select>'
+            +'<input class="li-qty" type="number" min="0" value="1" placeholder="Qty">'
+            +'<input class="li-rate" type="number" min="0" value="0" placeholder="Rate">'
+            +'<span class="li-amt">AED 0</span><button type="button" class="li-x">&times;</button>';
+          rowsEl.appendChild(row);
+          row.querySelector(".li-item").addEventListener("change", function(e){ var o=e.target.selectedOptions[0]; if(o && o.dataset.rate && +row.querySelector(".li-rate").value===0) row.querySelector(".li-rate").value=o.dataset.rate; recalc(); });
+          row.querySelector(".li-qty").addEventListener("input", recalc);
+          row.querySelector(".li-rate").addEventListener("input", recalc);
+          row.querySelector(".li-x").addEventListener("click", function(){ row.remove(); recalc(); });
+          recalc();
+        }
+        function recalc(){
+          var tot=0;
+          rowsEl.querySelectorAll(".lg-row").forEach(function(r){ var a=(+r.querySelector(".li-qty").value||0)*(+r.querySelector(".li-rate").value||0); r.querySelector(".li-amt").textContent=AED(a); tot+=a; });
+          totEl.textContent=AED(tot);
+        }
+        grid.querySelector(".lg-add").addEventListener("click", addRow);
+        addRow();
+      }
+
+      // Create handler
+      dr.querySelector(".createbtn").addEventListener("click", async function(){
+        var btn=this; if(btn._busy) return;
+        var values={}, bad=null;
+        spec.fields.forEach(function(f){
+          if(f.type==="items"){
+            var lines=[];
+            body.querySelectorAll(".lg-row").forEach(function(r){ var code=r.querySelector(".li-item").value; var qty=+r.querySelector(".li-qty").value||0; var rate=+r.querySelector(".li-rate").value||0; if(code && qty>0) lines.push({item_code:code, qty:qty, rate:rate}); });
+            values[f.key]=lines; if(f.required && !lines.length) bad=bad||"Add at least one line item";
+          } else {
+            var ctl=body.querySelector('[data-k="'+f.key+'"]'); var v=ctl?ctl.value.trim():"";
+            if(f.required && !v) bad=bad||("“"+f.label+"” is required");
+            values[f.key]=v;
+          }
+        });
+        if(bad){ toast(bad,"err"); return; }
+        btn._busy=true; btn.textContent="Saving…"; btn.style.opacity=".65";
+        try{
+          var payload = spec.transform ? spec.transform(values) : values;
+          var doc = await createDoc(spec.doctype, payload);
+          if(spec.submittable) await submitDoc(spec.doctype, doc.name);
+          toast((spec.title||"Record")+" created · "+doc.name, "ok");
+          close();
+          if(spec.afterCreate) spec.afterCreate(doc); else setTimeout(function(){ location.reload(); }, 650);
+        }catch(e){ toast(e.message||"Could not save","err"); btn._busy=false; btn.textContent="Create"; btn.style.opacity=""; }
+      });
+    }catch(e){
+      dr.querySelector(".db").innerHTML='<div class="nx-pulse">Could not load the form — sign in to the ERP first.</div>';
+    }
+  };
+
+  // Per-doctype form specs, keyed by the /app/<route>/new route
+  var FORMS = {
+    "customer": { doctype:"Customer", title:"New customer", fields:[
+      {key:"customer_name",label:"Customer name",type:"text",required:true,placeholder:"e.g. Al Noor Trading"},
+      {key:"customer_type",label:"Type",type:"select",options:["Company","Individual"],default:"Company"},
+      {key:"customer_group",label:"Group",type:"select",required:true,source:{doctype:"Customer Group",filters:[["is_group","=",0]]}},
+      {key:"territory",label:"Territory",type:"select",required:true,source:{doctype:"Territory",filters:[["is_group","=",0]]}},
+      {key:"email_id",label:"Email",type:"text"},
+      {key:"mobile_no",label:"Mobile",type:"text"}
+    ]},
+    "supplier": { doctype:"Supplier", title:"New supplier", fields:[
+      {key:"supplier_name",label:"Supplier name",type:"text",required:true,placeholder:"e.g. Gulf Components FZE"},
+      {key:"supplier_type",label:"Type",type:"select",options:["Company","Individual"],default:"Company"},
+      {key:"supplier_group",label:"Group",type:"select",required:true,source:{doctype:"Supplier Group",filters:[["is_group","=",0]]}},
+      {key:"country",label:"Country",type:"select",default:"United Arab Emirates",source:{doctype:"Country"}}
+    ]},
+    "item": { doctype:"Item", title:"New item", fields:[
+      {key:"item_name",label:"Item name",type:"text",required:true,placeholder:"e.g. USB-C Cable 1m"},
+      {key:"item_group",label:"Group",type:"select",required:true,source:{doctype:"Item Group",filters:[["is_group","=",0]]}},
+      {key:"stock_uom",label:"Unit",type:"select",required:true,default:"Nos",source:{doctype:"UOM"}},
+      {key:"standard_rate",label:"Standard rate",type:"number"},
+      {key:"description",label:"Description",type:"textarea"}
+    ], transform:function(v){ return {item_code:v.item_name, item_name:v.item_name, item_group:v.item_group, stock_uom:v.stock_uom, standard_rate:+v.standard_rate||0, description:v.description, is_stock_item:1}; } },
+    "sales-invoice": { doctype:"Sales Invoice", title:"New invoice", submittable:false, fields:[
+      {key:"customer",label:"Customer",type:"select",required:true,source:{doctype:"Customer",label:"customer_name"}},
+      {key:"posting_date",label:"Invoice date",type:"date"},
+      {key:"due_date",label:"Due date",type:"date"},
+      {key:"items",label:"Line items",type:"items",required:true}
+    ], transform:function(v){ return {customer:v.customer, company:NX.company, posting_date:v.posting_date, due_date:v.due_date, items:v.items}; } },
+    "quotation": { doctype:"Quotation", title:"New quotation", fields:[
+      {key:"party_name",label:"Customer",type:"select",required:true,source:{doctype:"Customer",label:"customer_name"}},
+      {key:"transaction_date",label:"Date",type:"date"},
+      {key:"valid_till",label:"Valid till",type:"date"},
+      {key:"items",label:"Line items",type:"items",required:true}
+    ], transform:function(v){ return {quotation_to:"Customer", party_name:v.party_name, company:NX.company, transaction_date:v.transaction_date, valid_till:v.valid_till, items:v.items}; } },
+    "purchase-invoice": { doctype:"Purchase Invoice", title:"New bill", fields:[
+      {key:"supplier",label:"Supplier",type:"select",required:true,source:{doctype:"Supplier",label:"supplier_name"}},
+      {key:"posting_date",label:"Bill date",type:"date"},
+      {key:"due_date",label:"Due date",type:"date"},
+      {key:"items",label:"Line items",type:"items",required:true}
+    ], transform:function(v){ return {supplier:v.supplier, company:NX.company, posting_date:v.posting_date, due_date:v.due_date, items:v.items}; } }
+  };
+  function wireCreate(){
+    document.addEventListener("click", function(e){
+      var a = e.target.closest('a[href*="/app/"][href$="/new"]'); if(!a) return;
+      var m = (a.getAttribute("href")||"").match(/\/app\/([^\/]+)\/new$/); if(!m) return;
+      var spec = FORMS[m[1]]; if(!spec) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      NX.openForm(spec);
+    }, true);
+  }
+
+  function injectFormCSS(){
+    var css=""
+    + ".nx-form .db{padding:14px 22px 20px;}"
+    + ".nx-form .ff{margin-bottom:14px;}"
+    + ".nx-form .ff label{display:block;font-size:12px;font-weight:700;color:#5a6578;margin-bottom:6px;}"
+    + ".nx-form .ff label i{color:var(--blue,#2563EB);font-style:normal;}"
+    + ".nx-form .ff input,.nx-form .ff select,.nx-form .ff textarea{width:100%;border:1px solid var(--line2,#e6eaf1);border-radius:10px;padding:10px 12px;font-size:13.5px;color:#101828;outline:none;background:#fff;transition:border-color .12s,box-shadow .12s;}"
+    + ".nx-form .ff textarea{min-height:64px;resize:vertical;}"
+    + ".nx-form .ff input:focus,.nx-form .ff select:focus,.nx-form .ff textarea:focus{border-color:var(--blue,#2563EB);box-shadow:0 0 0 3px rgba(37,99,235,.13);}"
+    + ".nx-form .lg{border:1px solid var(--line2,#e6eaf1);border-radius:12px;padding:10px;background:#fbfcfe;}"
+    + ".nx-form .lg-row{display:grid;grid-template-columns:1fr 64px 84px 86px 24px;gap:8px;align-items:center;margin-bottom:8px;}"
+    + ".nx-form .lg-row select,.nx-form .lg-row input{border:1px solid var(--line2,#e6eaf1);border-radius:8px;padding:8px 9px;font-size:12.5px;outline:none;background:#fff;width:100%;}"
+    + ".nx-form .lg-row .li-amt{font-size:12px;font-weight:700;color:#1d2a44;text-align:right;}"
+    + ".nx-form .lg-row .li-x{border:none;background:#eef1f6;color:#8a94a6;border-radius:7px;width:24px;height:28px;cursor:pointer;font-size:15px;}"
+    + ".nx-form .lg-add{border:1px dashed var(--line2,#cfd6e4);background:#fff;color:var(--blue,#2563EB);border-radius:8px;padding:8px;width:100%;font-size:12.5px;font-weight:700;cursor:pointer;margin-top:2px;}"
+    + ".nx-form .lg-tot{text-align:right;margin-top:10px;font-size:13px;color:#5a6578;}"
+    + ".nx-form .lg-tot b{color:#0f1b33;font-size:16px;font-weight:800;margin-left:8px;}"
+    + ".nx-form .df a{cursor:pointer;}"
+    + ".nx-toasts{position:fixed;right:18px;bottom:18px;z-index:120;display:flex;flex-direction:column;gap:10px;}"
+    + ".nx-toast{display:flex;align-items:center;gap:10px;background:#0f1b33;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:600;box-shadow:0 14px 40px rgba(16,24,40,.28);transform:translateY(14px);opacity:0;transition:transform .24s cubic-bezier(.4,0,.2,1),opacity .24s;max-width:360px;}"
+    + ".nx-toast.show{transform:none;opacity:1;}"
+    + ".nx-toast .ti{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}"
+    + ".nx-toast.ok .ti{background:rgba(22,163,74,.22);color:#4ade80;}"
+    + ".nx-toast.err{background:#3a0f12;}.nx-toast.err .ti{background:rgba(239,68,68,.25);color:#fda4a4;}"
+    + ".nx-toast.info .ti{background:rgba(37,99,235,.25);color:#93c5fd;}";
+    var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+
   // ---- Boot ---------------------------------------------------------------
   function boot(){
     injectCSS();
+    injectFormCSS();
     applyTheme();
     buildSwitcher();
     wirePalette();
     wireDrawers();
+    wireCreate();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

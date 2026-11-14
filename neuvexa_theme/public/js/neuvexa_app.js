@@ -1029,7 +1029,7 @@
     var s=q.toLowerCase(), co=company();
     var money = function(n){ return AED(n||0); };
     // revenue this month
-    if(/revenu|sales|turnover|income/.test(s)){
+    if(/revenu|sales|turnover|income/.test(s) && !/week|average|avg|biggest|largest|collect/.test(s)){
       var r=await rows("Sales Invoice",["grand_total"],[["company","=",co],["docstatus","=",1],["posting_date",">=",monthStart()]]);
       var t=r.reduce(function(a,x){return a+(x.grand_total||0);},0);
       return {title:"Revenue this month", big:money(t), note:r.length+" invoice"+(r.length===1?"":"s")+" since "+monthStart()+"."};
@@ -1109,6 +1109,35 @@
       }
       return {title:null, note:"I couldn’t find a customer matching “"+nameq+"”."};
     }
+    // collection rate
+    if(/collect|collection rate|how much.*(paid|collected)|paid vs/.test(s)){
+      var r=await rows("Sales Invoice",["grand_total","outstanding_amount"],[["company","=",co],["docstatus","=",1]]);
+      var billed=r.reduce(function(a,x){return a+(x.grand_total||0);},0);
+      var out2=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
+      var collected=billed-out2; var rate=billed?Math.round(collected/billed*100):0;
+      return {title:"Collection rate", big:rate+"%", rows:[{a:"Collected",b:money(collected)},{a:"Outstanding",b:money(out2)},{a:"Billed",b:money(billed)}], followups:["Who’s overdue?","Revenue this month"]};
+    }
+    // open quotations
+    if(/quotation|quote|proposal/.test(s)){
+      var r=await rows("Quotation",["grand_total","party_name","status","name"],[["company","=",co]],{order:"transaction_date desc"});
+      var open=r.filter(function(x){return x.status!=="Lost" && x.status!=="Expired";});
+      var t=open.reduce(function(a,x){return a+(x.grand_total||0);},0);
+      var top=open.slice(0,5).map(function(x){return {a:(x.party_name||x.name)+(x.status?" · "+x.status:""), b:money(x.grand_total||0)};});
+      return {title:"Open quotations", big:money(t)+" · "+open.length, rows:top, note:r.length+" quotation"+(r.length===1?"":"s")+" total.", followups:["Top customers","Revenue this month"]};
+    }
+    // new customers this month
+    if(/new customer|customers this month|added customer|signups?/.test(s)){
+      var r=await rows("Customer",["name","customer_name","creation"],[["creation",">=",monthStart()]],{order:"creation desc"});
+      var top=r.slice(0,6).map(function(c){return {a:c.customer_name||c.name, b:(""+c.creation).slice(0,10)};});
+      return {title:"New customers this month", big:""+r.length, rows:top, note:r.length?"Since "+monthStart()+".":"None added yet this month."};
+    }
+    // biggest invoice
+    if(/biggest invoice|largest invoice|highest invoice|biggest sale|largest sale/.test(s)){
+      var r=await rows("Sales Invoice",["name","customer","grand_total"],[["company","=",co],["docstatus","=",1]],{order:"grand_total desc", limit:"5"});
+      if(!r.length) return {title:null, note:"No submitted invoices yet."};
+      var top=r.map(function(x){return {a:x.customer+" · "+x.name, b:money(x.grand_total||0)};});
+      return {title:"Biggest invoices", big:money(r[0].grand_total||0), rows:top, followups:["Top customers","Average invoice value"]};
+    }
     // find / search fallback
     var term=q.replace(/^(find|search|show me|look up|lookup|where is|who is)\s+/i,"").trim();
     if(term && term.length>=2){
@@ -1136,7 +1165,7 @@
       +'<div class="body" id="nxcbody"><div class="bub ai">Hi! Ask me about your business — revenue, who’s overdue, top customers, stock, and more.</div>'
       +'<div class="chips">'
       +'<div class="chip">Revenue this month</div><div class="chip">Who’s overdue?</div>'
-      +'<div class="chip">Top customers</div><div class="chip">Low stock</div><div class="chip">Total payables</div></div></div>'
+      +'<div class="chip">Top customers</div><div class="chip">Low stock</div><div class="chip">Collection rate</div><div class="chip">Open quotations</div></div></div>'
       +'<div class="foot"><input id="nxcq" placeholder="Ask anything…" autocomplete="off"><button id="nxcsend">&#10148;</button></div>';
     document.body.appendChild(p);
     var body=p.querySelector("#nxcbody"), inp=p.querySelector("#nxcq");

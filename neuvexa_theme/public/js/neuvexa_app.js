@@ -1114,14 +1114,14 @@
       return {title:"Low / out of stock (≤5)", big:low.length+" item"+(low.length===1?"":"s"), rows:low, note:low.length?"Lowest first.":"Healthy stock levels."};
     }
     // counts
-    if(/how many|number of|count of|total (customer|client|item|product|invoice|supplier)/.test(s)){
+    if(/how many|number of|count of|total (customer|client|item|product|invoice|supplier)/.test(s) && !/paid|unpaid|settled|overdue|due/.test(s)){
       if(/customer|client/.test(s)){ var r=await rows("Customer",["name"]); return {title:"Customers", big:""+r.length}; }
       if(/item|product|sku/.test(s)){ var r=await rows("Item",["name"],[["is_stock_item","=",1]]); return {title:"Stock items", big:""+r.length}; }
       if(/supplier|vendor/.test(s)){ var r=await rows("Supplier",["name"]); return {title:"Suppliers", big:""+r.length}; }
       if(/invoice/.test(s)){ var r=await rows("Sales Invoice",["name"],[["company","=",co]]); return {title:"Invoices", big:""+r.length}; }
     }
     // this week's sales
-    if(/this week|past week|last 7 days|weekly sales|week.s sales/.test(s)){
+    if(/this week|past week|last 7 days|weekly sales|week.s sales/.test(s) && !/due|payable|owe/.test(s)){
       var d=new Date(), wd=d.getDay(), monday=new Date(d); monday.setDate(d.getDate()-((wd+6)%7));
       var ws=monday.getFullYear()+"-"+("0"+(monday.getMonth()+1)).slice(-2)+"-"+("0"+monday.getDate()).slice(-2);
       var r=await rows("Sales Invoice",["grand_total"],[["company","=",co],["docstatus","=",1],["posting_date",">=",ws]]);
@@ -1179,6 +1179,29 @@
       var top=r.map(function(x){return {a:x.customer+" · "+x.name, b:money(x.grand_total||0)};});
       return {title:"Biggest invoices", big:money(r[0].grand_total||0), rows:top, followups:["Top customers","Average invoice value"]};
     }
+    // invoices due soon (next 7 days)
+    if(/due (this week|soon|next week|in \d)|upcoming (due|payment)|coming due|due date|what.s due/.test(s)){
+      var d0=todayStr(); var d7d=new Date(); d7d.setDate(d7d.getDate()+7);
+      var d7=d7d.getFullYear()+"-"+("0"+(d7d.getMonth()+1)).slice(-2)+"-"+("0"+d7d.getDate()).slice(-2);
+      var r=await rows("Sales Invoice",["customer","outstanding_amount","due_date","name"],[["company","=",co],["docstatus","=",1],["outstanding_amount",">",0],["due_date",">=",d0],["due_date","<=",d7]],{order:"due_date asc"});
+      var t=r.reduce(function(a,x){return a+(x.outstanding_amount||0);},0);
+      var top=r.slice(0,6).map(function(x){return {a:x.customer+" · "+(""+x.due_date).slice(0,10), b:money(x.outstanding_amount||0)};});
+      return {title:"Due in the next 7 days", big:money(t)+" · "+r.length, rows:top, note:r.length?"Soonest first.":"Nothing due in the next 7 days.", followups:["Who’s overdue?","Collection rate"]};
+    }
+    // top supplier / biggest supplier by spend
+    if(/top supplier|biggest supplier|main supplier|largest supplier|who do (i|we) (buy|pay)|biggest vendor/.test(s)){
+      var r=await rows("Purchase Invoice",["supplier","grand_total"],[["company","=",co],["docstatus","=",1]]);
+      if(!r.length) return {title:null, note:"No submitted purchase invoices yet."};
+      var m={}; r.forEach(function(x){ m[x.supplier]=(m[x.supplier]||0)+(x.grand_total||0); });
+      var arr=Object.keys(m).map(function(k){return {a:k,b:money(m[k]),v:m[k]};}).sort(function(a,b){return b.v-a.v;}).slice(0,5);
+      return {title:"Top suppliers by spend", big:arr[0].a, rows:arr.map(function(x){return {a:x.a,b:x.b};}), note:"Across "+r.length+" purchase invoice"+(r.length===1?"":"s")+".", followups:["Payables","Revenue this month"]};
+    }
+    // paid vs unpaid invoice counts
+    if(/how many (paid|unpaid|settled|fully paid)|paid invoices|unpaid invoices|settled invoices/.test(s)){
+      var r=await rows("Sales Invoice",["outstanding_amount"],[["company","=",co],["docstatus","=",1]]);
+      var paid=r.filter(function(x){return (x.outstanding_amount||0)<=0.5;}).length, unpaid=r.length-paid;
+      return {title:"Invoice settlement", big:paid+" paid · "+unpaid+" open", rows:[{a:"Fully paid",b:""+paid},{a:"Still open",b:""+unpaid},{a:"Total",b:""+r.length}], followups:["Collection rate","Who’s overdue?"]};
+    }
     // find / search fallback
     var term=q.replace(/^(find|search|show me|look up|lookup|where is|who is)\s+/i,"").trim();
     if(term && term.length>=2){
@@ -1210,7 +1233,7 @@
       +'<div class="body" id="nxcbody"><div class="bub ai">Hi! Ask me about your business — revenue, who’s overdue, top customers, stock, and more.</div>'
       +'<div class="chips">'
       +'<div class="chip">Revenue this month</div><div class="chip">Who’s overdue?</div>'
-      +'<div class="chip">Top customers</div><div class="chip">Low stock</div><div class="chip">Collection rate</div><div class="chip">Open quotations</div></div></div>'
+      +'<div class="chip">Top customers</div><div class="chip">Low stock</div><div class="chip">Collection rate</div><div class="chip">Due this week</div><div class="chip">Top suppliers</div></div></div>'
       +'<div class="foot"><input id="nxcq" placeholder="Ask anything…" autocomplete="off"><button id="nxcsend">&#10148;</button></div>';
     document.body.appendChild(p);
     var body=p.querySelector("#nxcbody"), inp=p.querySelector("#nxcq");

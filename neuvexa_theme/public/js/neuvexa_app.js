@@ -796,7 +796,38 @@
     + ".nx-empty .nx-empty-ic{width:34px;height:34px;stroke:#c3ccdb;margin:0 auto 9px;display:block;}html.nx-dark .nx-empty .nx-empty-ic{stroke:#3a455f;}"
     + ".nx-empty div{font-size:13px;}"
     + "html.nx-compact .panel tbody td{padding-top:7px;padding-bottom:7px;}"
-    + "html.nx-compact .panel thead th{padding-top:9px;padding-bottom:9px;}";
+    + "html.nx-compact .panel thead th{padding-top:9px;padding-bottom:9px;}"
+    // ---- AI command deck: greeting + live insights strip ----
+    + ".nx-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:2px 0 14px;flex-wrap:wrap;}"
+    + ".nx-hero h2{font-size:21px;font-weight:800;color:var(--navy,#1d2a44);letter-spacing:-.2px;line-height:1.15;}"
+    + "html.nx-dark .nx-hero h2{color:var(--ink);}"
+    + ".nx-hero .nx-snap{font-size:12.5px;color:var(--muted,#8a94a6);margin-top:5px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}"
+    + ".nx-hero .nx-snap b{color:var(--blue,#2563EB);font-weight:800;}"
+    + ".nx-hero .nx-snap .nx-dot2{width:3px;height:3px;border-radius:50%;background:#c7cfdd;display:inline-block;}"
+    + ".nx-aibadge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--blue,#2563EB),var(--accent2,#6d5ef5));color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:5px 11px;border-radius:999px;box-shadow:0 6px 16px rgba(37,99,235,.28);text-transform:uppercase;}"
+    + ".nx-aibadge svg{width:12px;height:12px;stroke:#fff;fill:none;}"
+    + ".nx-aibadge .pulse{width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.7);animation:nxpulse 1.8s infinite;}"
+    + "@keyframes nxpulse{0%{box-shadow:0 0 0 0 rgba(255,255,255,.6);}70%{box-shadow:0 0 0 6px rgba(255,255,255,0);}100%{box-shadow:0 0 0 0 rgba(255,255,255,0);}}"
+    + ".nx-ins{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 20px;}"
+    + ".nx-ins-card{position:relative;background:var(--card,#fff);border:1px solid var(--line2,#e6eaf1);border-radius:15px;padding:15px 16px 14px;overflow:hidden;transition:transform .16s,box-shadow .16s,border-color .16s;}"
+    + ".nx-ins-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tint,#2563EB);opacity:.9;}"
+    + ".nx-ins-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(16,24,40,.1);border-color:var(--tint,#2563EB);}"
+    + "html.nx-dark .nx-ins-card{background:#141b2e;border-color:var(--line2);}"
+    + ".nx-ins-top{display:flex;align-items:center;gap:8px;margin-bottom:9px;}"
+    + ".nx-ins-ic{width:26px;height:26px;border-radius:8px;background:color-mix(in srgb,var(--tint,#2563EB) 14%,transparent);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}"
+    + ".nx-ins-ic svg{width:14px;height:14px;stroke:var(--tint,#2563EB);fill:none;stroke-width:2.2;}"
+    + ".nx-ins-lab{font-size:10.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--muted,#8a94a6);}"
+    + ".nx-ins-val{font-size:22px;font-weight:800;color:var(--navy,#1d2a44);letter-spacing:-.3px;line-height:1.1;}"
+    + "html.nx-dark .nx-ins-val{color:var(--ink);}"
+    + ".nx-ins-val.sm{font-size:16px;}"
+    + ".nx-ins-note{font-size:11.5px;color:var(--muted,#8a94a6);margin-top:4px;font-weight:600;min-height:15px;}"
+    + ".nx-ins-chip{margin-top:11px;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--tint,#2563EB);cursor:pointer;background:none;border:none;padding:0;transition:gap .15s;}"
+    + ".nx-ins-chip:hover{gap:9px;}"
+    + ".nx-ins-chip svg{width:12px;height:12px;stroke:var(--tint,#2563EB);fill:none;stroke-width:2.4;}"
+    + ".nx-ins-card.nx-sk .nx-ins-val,.nx-ins-card.nx-sk .nx-ins-note{color:transparent;background:linear-gradient(90deg,#eef1f6 25%,#e3e8f0 37%,#eef1f6 63%);background-size:400% 100%;animation:nxsh 1.3s ease infinite;border-radius:6px;}"
+    + "html.nx-dark .nx-ins-card.nx-sk .nx-ins-val,html.nx-dark .nx-ins-card.nx-sk .nx-ins-note{background:linear-gradient(90deg,#1b2336 25%,#243049 37%,#1b2336 63%);background-size:400% 100%;}"
+    + "@media(max-width:1000px){.nx-ins{grid-template-columns:repeat(2,1fr);}}"
+    + "@media(max-width:560px){.nx-ins{grid-template-columns:1fr;}}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
   }
   function applyDensity(){ try { document.documentElement.classList.toggle("nx-compact", localStorage.getItem("nx_compact")==="1"); } catch(e){} }
@@ -1215,6 +1246,79 @@
     return true;
   }
 
+  // ---- AI command deck: time-aware greeting + live insights (dashboard only)
+  function greetWord(){ var h=new Date().getHours(); return h<12?"Good morning":(h<17?"Good afternoon":"Good evening"); }
+  async function wireInsights(){
+    var kpis=document.querySelector(".kpis");
+    if(!kpis || !document.getElementById("kRevenue")) return;   // dashboard page only
+    if(document.querySelector(".nx-hero")) return;              // already built
+    var co=company();
+    var nm=(((document.getElementById("meName")||{}).textContent)||"there").trim().split(/\s+/)[0];
+    var hero=document.createElement("div"); hero.className="nx-hero";
+    hero.innerHTML='<div><h2>'+greetWord()+', '+esc(nm)+'</h2>'
+      +'<div class="nx-snap" id="nxSnap">Reading your live numbers&hellip;</div></div>'
+      +'<span class="nx-aibadge"><span class="pulse"></span>AI insights</span>';
+    var defs=[
+      {k:"collect",tint:"#2563EB",lab:"Collection health",ic:'<path d="M20 6L9 17l-5-5"/>'},
+      {k:"week",tint:"#16a34a",lab:"This week",ic:'<path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/>'},
+      {k:"top",tint:"#6d5ef5",lab:"Top customer",ic:'<circle cx="12" cy="7" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/>'},
+      {k:"avg",tint:"#e9a23b",lab:"Avg invoice",ic:'<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'}
+    ];
+    var strip=document.createElement("div"); strip.className="nx-ins"; strip.id="nxIns";
+    strip.innerHTML=defs.map(function(d){
+      return '<div class="nx-ins-card nx-sk" style="--tint:'+d.tint+'" data-k="'+d.k+'">'
+        +'<div class="nx-ins-top"><span class="nx-ins-ic"><svg viewBox="0 0 24 24">'+d.ic+'</svg></span>'
+        +'<span class="nx-ins-lab">'+d.lab+'</span></div>'
+        +'<div class="nx-ins-val">0000</div><div class="nx-ins-note">loading</div></div>';
+    }).join("");
+    kpis.parentNode.insertBefore(hero, kpis);
+    kpis.parentNode.insertBefore(strip, kpis);
+    // avoid a double greeting: retire the static "Good morning…" subtitle
+    var h1=document.querySelector("h1");
+    if(h1){ var sub=h1.nextElementSibling; if(sub && sub.tagName==="P") sub.style.display="none"; }
+    function fill(k,val,note,sm,chipText,chipHref){
+      var c=strip.querySelector('[data-k="'+k+'"]'); if(!c) return;
+      c.classList.remove("nx-sk");
+      var v=c.querySelector(".nx-ins-val"); v.textContent=val; v.className="nx-ins-val"+(sm?" sm":"");
+      c.querySelector(".nx-ins-note").textContent=note;
+      if(chipText){
+        var b=document.createElement("button"); b.className="nx-ins-chip";
+        b.innerHTML=esc(chipText)+' <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+        b.addEventListener("click",function(){ location.href=chipHref; });
+        c.appendChild(b);
+      }
+    }
+    try{
+      var inv=await rows("Sales Invoice",["grand_total","outstanding_amount","posting_date","due_date","customer"],[["company","=",co],["docstatus","=",1]]);
+      var ms=monthStart(), today=todayStr();
+      var dd=new Date(), wdd=dd.getDay(), mon=new Date(dd); mon.setDate(dd.getDate()-((wdd+6)%7));
+      var ws=mon.getFullYear()+"-"+("0"+(mon.getMonth()+1)).slice(-2)+"-"+("0"+mon.getDate()).slice(-2);
+      var billed=0,out=0,mtd=0,wk=0,wkN=0,overdue=0,byCust={};
+      inv.forEach(function(x){
+        var g=x.grand_total||0, o=x.outstanding_amount||0;
+        billed+=g; out+=o;
+        if((x.posting_date||"")>=ms) mtd+=g;
+        if((x.posting_date||"")>=ws){ wk+=g; wkN++; }
+        if(o>0 && (x.due_date||"9999-99-99")<today) overdue++;
+        if(o>0) byCust[x.customer]=(byCust[x.customer]||0)+o;
+      });
+      var collected=billed-out, rate=billed?Math.round(collected/billed*100):0;
+      var avg=inv.length?billed/inv.length:0;
+      var tn=Object.keys(byCust), topName="—", topPct=0;
+      if(tn.length){ tn.sort(function(a,b){return byCust[b]-byCust[a];}); topName=tn[0]; topPct=out?Math.round(byCust[topName]/out*100):0; }
+      var snap=document.getElementById("nxSnap");
+      if(snap) snap.innerHTML='<b>'+AED(mtd)+'</b> revenue MTD <span class="nx-dot2"></span> '
+        +inv.length+' invoice'+(inv.length===1?"":"s")+' <span class="nx-dot2"></span> <b>'+AED(out)+'</b> outstanding';
+      fill("collect", rate+"%", overdue+" overdue · "+AED(out)+" open", false, overdue?"Chase overdue":"View invoices", "/invoices");
+      fill("week", AED(wk), wkN+" invoice"+(wkN===1?"":"s")+" since Mon", false, "View sales", "/invoices");
+      fill("top", topName, topName==="—"?"No open receivables":topPct+"% of receivables", topName!=="—", "View customers", "/customers");
+      fill("avg", AED(avg), "across "+inv.length+" invoice"+(inv.length===1?"":"s"), false, "Open reports", "/reports");
+    }catch(e){
+      var snap2=document.getElementById("nxSnap"); if(snap2) snap2.textContent="Live data unavailable right now.";
+      strip.querySelectorAll(".nx-ins-card").forEach(function(c){ c.classList.remove("nx-sk"); c.querySelector(".nx-ins-val").textContent="—"; c.querySelector(".nx-ins-note").textContent=""; });
+    }
+  }
+
   function boot(){
     if(!guardAuth()) return;
     injectCSS();
@@ -1242,6 +1346,7 @@
     if(document.body) document.body.classList.add("nx-anim");
     setTimeout(wireCountUp, 300);
     setTimeout(wireSparkline, 500);
+    setTimeout(wireInsights, 350);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

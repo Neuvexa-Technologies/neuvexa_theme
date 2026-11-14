@@ -256,17 +256,35 @@
     { dt:"Item", route:"items", label:"Items", name:"item_name", icon:'<path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>', tint:"#16a34a" },
     { dt:"Sales Invoice", route:"app/sales-invoice", label:"Invoices", name:"customer", icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>', tint:"#6d5ef5", amt:"grand_total", drawer:true }
   ];
+  var ACT_PLUS = '<path d="M12 5v14M5 12h14"/>';
+  var ACT_SPARK = '<path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/>';
+  var ACT_MOON = '<path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/>';
+  var ACT_ARROW = '<path d="M5 12h14M13 6l6 6-6 6"/>';
+  function ACTIONS(){ return [
+    { group:"Actions", title:"New invoice", sub:"Create a sales invoice", tint:"#6d5ef5", icon:ACT_PLUS, run:function(){ NX.newDoc("sales-invoice"); } },
+    { group:"Actions", title:"New customer", sub:"Add a customer", tint:"#2563EB", icon:ACT_PLUS, run:function(){ NX.newDoc("customer"); } },
+    { group:"Actions", title:"New item", sub:"Add a stock item", tint:"#16a34a", icon:ACT_PLUS, run:function(){ NX.newDoc("item"); } },
+    { group:"Actions", title:"Ask Neuvexa", sub:"AI answers from your data", tint:"#6d5ef5", icon:ACT_SPARK, run:function(){ NX.openCopilot(); } },
+    { group:"Actions", title:"Toggle dark mode", sub:"Switch light / dark", tint:"#e9a23b", icon:ACT_MOON, run:function(){ NX.toggleDark(); } },
+    { group:"Go to", title:"Dashboard", sub:"/neuvexa", tint:"#2563EB", icon:ACT_ARROW, nav:"/neuvexa" },
+    { group:"Go to", title:"Invoices", sub:"/invoices", tint:"#2563EB", icon:ACT_ARROW, nav:"/invoices" },
+    { group:"Go to", title:"Customers", sub:"/customers", tint:"#2563EB", icon:ACT_ARROW, nav:"/customers" },
+    { group:"Go to", title:"Items & Stock", sub:"/items", tint:"#2563EB", icon:ACT_ARROW, nav:"/items" },
+    { group:"Go to", title:"Reports", sub:"/reports", tint:"#2563EB", icon:ACT_ARROW, nav:"/reports" }
+  ]; }
   function paletteBuild(){
     var mask = document.createElement("div"); mask.className = "nx-mask";
     var pal = document.createElement("div"); pal.className = "nx-pal";
     pal.innerHTML = '<div class="hd"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>'
-      + '<input id="nxq" placeholder="Search customers, items, invoices…" autocomplete="off"><span class="esc">esc</span></div>'
-      + '<div class="bd" id="nxbd"><div class="hint">Start typing to search across your company.</div></div>';
+      + '<input id="nxq" placeholder="Search or type a command…" autocomplete="off"><span class="esc">esc</span></div>'
+      + '<div class="bd" id="nxbd"></div>';
     document.body.appendChild(mask); document.body.appendChild(pal);
     var inp = pal.querySelector("#nxq"), bd = pal.querySelector("#nxbd");
     var results = [], sel = 0, t = null, open = true;
     function close(){ open=false; mask.classList.remove("show"); pal.remove(); mask.remove(); }
     function go(r){
+      if(r.run){ close(); r.run(); return; }
+      if(r.nav){ close(); location.href = r.nav; return; }
       if(r.drawer){ close(); NX.openDrawer(r.dt, r.name); return; }
       if(r.route.indexOf("app/")===0){ location.href = "/"+r.route+"/"+encodeURIComponent(r.name); }
       else { location.href = "/"+r.route; }
@@ -284,8 +302,9 @@
       bd.innerHTML = html;
     }
     async function search(q){
-      if(!q){ results=[]; sel=0; render(); return; }
-      var out = [];
+      if(!q){ results = ACTIONS(); sel=0; render(); return; }
+      var out = [], ql = q.toLowerCase();
+      ACTIONS().forEach(function(a){ if(a.title.toLowerCase().indexOf(ql)>=0 || (a.sub||"").toLowerCase().indexOf(ql)>=0) out.push(a); });
       await Promise.all(SEARCH.map(async function(s){
         try{
           var fields = ["name"]; if(s.name && s.name!=="name") fields.push(s.name); if(s.amt) fields.push(s.amt);
@@ -313,6 +332,7 @@
       else if(e.key==="Enter"){ if(results[sel]) go(results[sel]); }
     });
     mask.addEventListener("click", close);
+    search("");
     requestAnimationFrame(function(){ mask.classList.add("show"); inp.focus(); });
   }
   function wirePalette(){
@@ -603,6 +623,7 @@
       {key:"items",label:"Line items",type:"items",required:true}
     ], transform:function(v){ return {supplier:v.supplier, company:NX.company, posting_date:v.posting_date, due_date:v.due_date, items:v.items}; } }
   };
+  NX.newDoc = function(route){ var spec = FORMS[route]; if(spec) NX.openForm(spec); else location.href = "/app/"+route+"/new"; };
   function wireCreate(){
     document.addEventListener("click", function(e){
       var a = e.target.closest('a[href*="/app/"][href$="/new"]'); if(!a) return;
@@ -684,8 +705,38 @@
     + ".nx-keys h3{font-size:16px;font-weight:800;color:var(--navy,#0f1b33);margin-bottom:14px;}html.nx-dark .nx-keys h3{color:#fff;}"
     + ".nx-keys .kr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line,#edf0f5);font-size:13.5px;color:#1d2a44;}html.nx-dark .nx-keys .kr{color:var(--ink2);border-color:#232c44;}"
     + ".nx-keys .kr:last-child{border-bottom:none;}"
-    + ".nx-keys kbd{background:var(--bg,#f7f8fb);border:1px solid var(--line2,#e6eaf1);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;color:#5a6578;}html.nx-dark .nx-keys kbd{background:#0d1324;border-color:#2a3550;color:#aab6cc;}";
+    + ".nx-keys kbd{background:var(--bg,#f7f8fb);border:1px solid var(--line2,#e6eaf1);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;color:#5a6578;}html.nx-dark .nx-keys kbd{background:#0d1324;border-color:#2a3550;color:#aab6cc;}"
+    // collapsible sidebar (icon rail)
+    + ".sidebar{transition:width .2s cubic-bezier(.4,0,.2,1);}"
+    + "@media(min-width:761px){"
+    + "  html.nx-collapsed .sidebar{width:72px;}"
+    + "  html.nx-collapsed .sidebar .brand .txt,html.nx-collapsed .sidebar .side-foot span{display:none;}"
+    + "  html.nx-collapsed .sidebar .nav .group{font-size:0;height:6px;}"
+    + "  html.nx-collapsed .sidebar .nav a{font-size:0;gap:0;justify-content:center;padding-left:0;padding-right:0;}"
+    + "  html.nx-collapsed .sidebar .nav a svg{width:19px;height:19px;}"
+    + "  html.nx-collapsed .sidebar .brand{justify-content:center;padding:18px 0 16px;}"
+    + "  html.nx-collapsed .sidebar .side-foot{justify-content:center;}"
+    + "}"
+    // page-load entrance animation
+    + "@keyframes nxUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}"
+    + ".nx-anim .kpis .kpi{animation:nxUp .44s both;}"
+    + ".nx-anim .kpis .kpi:nth-child(2){animation-delay:.05s;}"
+    + ".nx-anim .kpis .kpi:nth-child(3){animation-delay:.1s;}"
+    + ".nx-anim .kpis .kpi:nth-child(4){animation-delay:.15s;}"
+    + ".nx-anim .panel{animation:nxUp .5s .12s both;}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+
+  // ---- Collapsible sidebar ------------------------------------------------
+  function applyCollapse(){ try { document.documentElement.classList.toggle("nx-collapsed", localStorage.getItem("nx_collapsed")==="1"); } catch(e){} }
+  function wireCollapse(){
+    applyCollapse();
+    var f = document.querySelector(".side-foot"); if(!f) return;
+    f.style.cursor = "pointer";
+    f.addEventListener("click", function(){
+      var on = document.documentElement.classList.toggle("nx-collapsed");
+      try { localStorage.setItem("nx_collapsed", on?"1":"0"); } catch(e){}
+    });
   }
 
   // ---- Count-up animation for KPI numbers ---------------------------------
@@ -883,6 +934,8 @@
     wireDrawers();
     wireCreate();
     wireCopilot();
+    wireCollapse();
+    if(document.body) document.body.classList.add("nx-anim");
     setTimeout(wireCountUp, 300);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

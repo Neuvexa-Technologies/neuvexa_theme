@@ -723,8 +723,79 @@
     + ".nx-anim .kpis .kpi:nth-child(2){animation-delay:.05s;}"
     + ".nx-anim .kpis .kpi:nth-child(3){animation-delay:.1s;}"
     + ".nx-anim .kpis .kpi:nth-child(4){animation-delay:.15s;}"
-    + ".nx-anim .panel{animation:nxUp .5s .12s both;}";
+    + ".nx-anim .panel{animation:nxUp .5s .12s both;}"
+    // skeleton shimmer
+    + ".nx-skrow td{padding:14px 18px;border-bottom:1px solid var(--line,#edf0f5);}"
+    + ".nx-sk{height:12px;border-radius:6px;background:linear-gradient(90deg,#eef1f6 25%,#e3e8f0 37%,#eef1f6 63%);background-size:400% 100%;animation:nxsh 1.3s ease infinite;}"
+    + "@keyframes nxsh{0%{background-position:100% 0;}100%{background-position:0 0;}}"
+    + "html.nx-dark .nx-sk{background:linear-gradient(90deg,#1a2238 25%,#243049 37%,#1a2238 63%);background-size:400% 100%;}"
+    // notification bell dropdown
+    + ".nx-bell-menu{position:absolute;z-index:70;background:#fff;border:1px solid var(--line2,#e6eaf1);border-radius:14px;box-shadow:0 16px 44px rgba(16,24,40,.18);width:330px;max-width:92vw;overflow:hidden;}"
+    + "html.nx-dark .nx-bell-menu{background:#111728;border-color:var(--line2);color:var(--ink);}"
+    + ".nx-bell-menu .bh{padding:13px 16px;border-bottom:1px solid var(--line,#edf0f5);font-size:13px;font-weight:800;color:var(--navy,#0f1b33);display:flex;justify-content:space-between;align-items:center;}html.nx-dark .nx-bell-menu .bh{color:#fff;}"
+    + ".nx-bell-menu .bh span{font-size:11px;font-weight:600;color:var(--muted,#8a94a6);}"
+    + ".nx-bell-menu .bi{display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--line,#edf0f5);}"
+    + ".nx-bell-menu .bi:last-child{border-bottom:none;}"
+    + ".nx-bell-menu .bi:hover{background:var(--blue-soft,#eaf0fe);}html.nx-dark .nx-bell-menu .bi:hover{background:#17213c;}"
+    + ".nx-bell-menu .bi .ic{width:30px;height:30px;border-radius:8px;background:var(--blue-soft,#eaf0fe);display:flex;align-items:center;justify-content:center;flex-shrink:0;}html.nx-dark .nx-bell-menu .bi .ic{background:#1a2440;}"
+    + ".nx-bell-menu .bi .ic svg{width:15px;height:15px;stroke:var(--blue,#2563EB);}"
+    + ".nx-bell-menu .bi b{font-size:13px;font-weight:700;color:#1d2a44;display:block;}html.nx-dark .nx-bell-menu .bi b{color:var(--ink);}"
+    + ".nx-bell-menu .bi span{font-size:11.5px;color:var(--muted,#8a94a6);}"
+    + ".nx-bell-menu .bi .amt{margin-left:auto;font-size:12.5px;font-weight:800;color:#0f1b33;}html.nx-dark .nx-bell-menu .bi .amt{color:#fff;}"
+    + ".nx-bell-menu .be{padding:22px 16px;text-align:center;color:var(--muted,#8a94a6);font-size:13px;}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+
+  // ---- Skeleton loaders ---------------------------------------------------
+  function wireSkeleton(){
+    document.querySelectorAll("tbody").forEach(function(tb){
+      var e = tb.querySelector("td.empty");
+      if(e && /load/i.test(e.textContent)){
+        var tbl = tb.closest("table");
+        var cols = tbl ? tbl.querySelectorAll("thead th").length : 0; if(!cols) cols = 5;
+        var row = '<tr class="nx-skrow">';
+        for(var i=0;i<cols;i++){ row += '<td><div class="nx-sk" style="width:'+(i===0?70:(40+((i*17)%45)))+'%"></div></td>'; }
+        row += '</tr>';
+        var html=""; for(var r=0;r<6;r++){ html += row; }
+        tb.innerHTML = html;
+      }
+    });
+  }
+
+  // ---- Notification bell (recent activity) --------------------------------
+  function wireBell(){
+    var bell = document.querySelector(".topbar .bell"); if(!bell) return;
+    bell.style.cursor = "pointer";
+    var menu = null;
+    function close(){ if(menu){ menu.remove(); menu=null; } }
+    bell.addEventListener("click", async function(e){
+      e.stopPropagation();
+      if(menu){ close(); return; }
+      menu = document.createElement("div"); menu.className = "nx-bell-menu";
+      menu.innerHTML = '<div class="bh">Recent activity <span>live</span></div><div class="be">Loading…</div>';
+      document.body.appendChild(menu);
+      var r = bell.getBoundingClientRect();
+      menu.style.top = (r.bottom + 8) + "px"; menu.style.right = (window.innerWidth - r.right) + "px";
+      var invIcon = '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>';
+      try{
+        var p = new URLSearchParams();
+        p.set("fields", JSON.stringify(["name","customer","grand_total","status","posting_date"]));
+        p.set("filters", JSON.stringify([["company","=",company()]]));
+        p.set("order_by","creation desc"); p.set("limit_page_length","6");
+        var rows = ((await api("/api/resource/Sales Invoice?"+p)).data)||[];
+        if(!rows.length){ menu.querySelector(".be").textContent = "No recent activity."; return; }
+        menu.innerHTML = '<div class="bh">Recent activity <span>latest invoices</span></div>' + rows.map(function(d){
+          return '<div class="bi" data-n="'+esc(d.name)+'"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2">'+invIcon+'</svg></div>'
+            + '<div><b>'+esc(d.customer||d.name)+'</b><span>'+esc(d.name)+(d.status?' · '+esc(d.status):'')+'</span></div>'
+            + '<span class="amt">'+AED(d.grand_total||0)+'</span></div>';
+        }).join("");
+        menu.addEventListener("click", function(ev){
+          var bi = ev.target.closest(".bi"); if(!bi) return;
+          close(); NX.openDrawer("Sales Invoice", bi.getAttribute("data-n"));
+        });
+      }catch(err){ menu.querySelector(".be").textContent = "Couldn’t load activity."; }
+    });
+    document.addEventListener("click", close);
   }
 
   // ---- Collapsible sidebar ------------------------------------------------
@@ -935,6 +1006,8 @@
     wireCreate();
     wireCopilot();
     wireCollapse();
+    wireSkeleton();
+    wireBell();
     if(document.body) document.body.classList.add("nx-anim");
     setTimeout(wireCountUp, 300);
   }

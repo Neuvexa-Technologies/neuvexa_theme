@@ -6,33 +6,53 @@
   "use strict";
   if (window.NX) return;
 
-  // ---- White-label config -------------------------------------------------
-  // Change these per client to re-brand the whole product in one place.
-  var CONFIG = {
-    brand:   "Neuvexa ERP",
-    tagline: "by Neuvexa",
-    accent:  "#2563EB",            // primary colour (--blue)
-    accentInk: "#1e40af",
-    defaultCompany: "Gulf Mobile & Accessories LLC"
+  // ---- White-label brand registry ----------------------------------------
+  // Re-brand the whole product in ONE place. To ship a new reseller brand,
+  // add a preset here (name, tagline, two accent colours) — nothing else.
+  // The active brand is picked, in order, from:  ?brand=<key>  →  localStorage
+  // "nx_brand"  →  DEFAULT_BRAND. So a single deployment can preview any brand
+  // live (great for per-prospect demos) and a client install just sets its own.
+  var BRANDS = {
+    neuvexa: { brand:"Neuvexa ERP", tagline:"by Neuvexa", accent:"#2563EB", accentInk:"#1e40af", accent2:"#6d5ef5" },
+    lumina:  { brand:"Lumina ERP",  tagline:"by Lumina",  accent:"#0ea5a4", accentInk:"#0f766e", accent2:"#22c55e" },
+    vantage: { brand:"Vantage ERP", tagline:"by Vantage", accent:"#7c3aed", accentInk:"#5b21b6", accent2:"#ec4899" }
   };
+  var DEFAULT_BRAND = "neuvexa";
+  var DEFAULT_COMPANY = "Gulf Mobile & Accessories LLC";
+  function brandKey(){
+    try {
+      var q = new URLSearchParams(location.search).get("brand");
+      if(q && BRANDS[q]){ localStorage.setItem("nx_brand", q); return q; }
+      return localStorage.getItem("nx_brand") || DEFAULT_BRAND;
+    } catch(e){ return DEFAULT_BRAND; }
+  }
+  function brand(){ return BRANDS[brandKey()] || BRANDS[DEFAULT_BRAND]; }
+  function setBrand(k){ if(!BRANDS[k]) return; try { localStorage.setItem("nx_brand", k); } catch(e){} applyTheme(); }
+  var CONFIG = brand(); // active brand (kept for back-compat references)
 
   var LS_COMPANY = "nx_company";
-  function company(){ try { return localStorage.getItem(LS_COMPANY) || CONFIG.defaultCompany; } catch(e){ return CONFIG.defaultCompany; } }
+  function company(){ try { return localStorage.getItem(LS_COMPANY) || DEFAULT_COMPANY; } catch(e){ return DEFAULT_COMPANY; } }
   function setCompany(c){ try { localStorage.setItem(LS_COMPANY, c); } catch(e){} }
 
   var AED = function(n){ return "AED " + (Math.round(n)).toLocaleString("en-US"); };
   function esc(s){ return (s==null?"":(""+s)).replace(/[&<>"]/g, function(c){ return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" })[c]; }); }
   async function api(path){ var r = await fetch(path, {credentials:"include"}); if(!r.ok) throw new Error(path+" -> "+r.status); return r.json(); }
 
-  window.NX = { config: CONFIG, get company(){ return company(); }, setCompany: setCompany };
+  window.NX = {
+    config: CONFIG, brands: BRANDS,
+    get company(){ return company(); }, setCompany: setCompany,
+    get brand(){ return brandKey(); }, setBrand: setBrand
+  };
 
   // ---- Theming ------------------------------------------------------------
   function applyTheme(){
-    var root = document.documentElement;
-    if (CONFIG.accent)    root.style.setProperty("--blue", CONFIG.accent);
-    if (CONFIG.accentInk) root.style.setProperty("--blue-ink", CONFIG.accentInk);
-    var b = document.querySelector(".brand .txt b"); if (b && CONFIG.brand) b.textContent = CONFIG.brand;
-    var s = document.querySelector(".brand .txt span"); if (s && CONFIG.tagline) s.textContent = CONFIG.tagline;
+    var c = brand(); var root = document.documentElement;
+    if (c.accent)    root.style.setProperty("--blue", c.accent);
+    if (c.accentInk) root.style.setProperty("--blue-ink", c.accentInk);
+    root.style.setProperty("--accent2", c.accent2 || c.accent);
+    var b = document.querySelector(".brand .txt b"); if (b && c.brand) b.textContent = c.brand;
+    var s = document.querySelector(".brand .txt span"); if (s && c.tagline) s.textContent = c.tagline;
+    try { document.title = document.title.replace(/Neuvexa ERP/g, c.brand); } catch(e){}
   }
 
   // ---- Dark "cockpit" mode ------------------------------------------------

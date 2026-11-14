@@ -179,8 +179,9 @@
 
 <div class="src" id="srcNote">Loading live data&hellip;</div>
 
+<script src="/assets/neuvexa_theme/js/neuvexa_app.js"></script>
 <script>
-const COMPANY = "Gulf Mobile & Accessories LLC";
+const COMPANY = (window.NX && NX.company) || "Gulf Mobile & Accessories LLC";
 const AED = n => "AED " + (Math.round(n)).toLocaleString("en-US");
 const SHORT = n => { n=Math.round(n); if(n>=1000) return (n/1000).toFixed(n>=10000?0:1)+"k"; return ""+n; };
 const el = id => document.getElementById(id);

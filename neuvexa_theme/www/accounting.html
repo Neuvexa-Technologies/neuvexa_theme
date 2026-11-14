@@ -167,8 +167,9 @@
 
 <div class="src" id="srcNote">Loading live data&hellip;</div>
 
+<script src="/assets/neuvexa_theme/js/neuvexa_app.js"></script>
 <script>
-const COMPANY = "Gulf Mobile & Accessories LLC";
+const COMPANY = (window.NX && NX.company) || "Gulf Mobile & Accessories LLC";
 const el = id => document.getElementById(id);
 const RT = {Asset:"var(--blue)",Liability:"var(--amber)",Income:"var(--green)",Expense:"var(--red)",Equity:"var(--purple)"};
 let ALL = [], filt = "all", term = "";

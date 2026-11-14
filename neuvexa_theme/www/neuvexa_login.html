@@ -76,6 +76,32 @@
 
 <script>
 (function(){
+  // ---- White-label: match the active brand (shared with the app) ----------
+  var BRANDS = {
+    neuvexa: { brand:"Neuvexa ERP", tagline:"by Neuvexa", accent:"#2563EB", accent2:"#6d5ef5", a3:"#1e9c8f" },
+    lumina:  { brand:"Lumina ERP",  tagline:"by Lumina",  accent:"#0ea5a4", accent2:"#22c55e", a3:"#2563EB" },
+    vantage: { brand:"Vantage ERP", tagline:"by Vantage", accent:"#7c3aed", accent2:"#ec4899", a3:"#2563EB" }
+  };
+  function brandKey(){
+    try { var q = new URLSearchParams(location.search).get("brand");
+      if(q && BRANDS[q]){ localStorage.setItem("nx_brand", q); return q; }
+      return localStorage.getItem("nx_brand") || "neuvexa";
+    } catch(e){ return "neuvexa"; }
+  }
+  (function applyBrand(){
+    var c = BRANDS[brandKey()] || BRANDS.neuvexa, r = document.documentElement.style;
+    r.setProperty("--blue", c.accent); r.setProperty("--purple", c.accent2);
+    document.title = "Sign in · " + c.brand;
+    var bn = document.querySelector(".brandline b"); if(bn) bn.textContent = c.brand;
+    var bt = document.querySelector(".brandline span"); if(bt) bt.textContent = c.tagline;
+    var sub = document.querySelector(".card .sub"); if(sub) sub.textContent = "Sign in to your " + c.brand.replace(/ ERP$/,"") + " workspace.";
+    var a1 = document.querySelector(".a1"); if(a1) a1.style.background = "radial-gradient(circle at 30% 30%,"+c.accent+",transparent 65%)";
+    var a2 = document.querySelector(".a2"); if(a2) a2.style.background = "radial-gradient(circle at 60% 40%,"+c.accent2+",transparent 65%)";
+    var a3 = document.querySelector(".a3"); if(a3) a3.style.background = "radial-gradient(circle at 50% 50%,"+c.a3+",transparent 65%)";
+    var btn = document.querySelector(".btn"); if(btn) btn.style.background = "linear-gradient(135deg,"+c.accent+","+c.accent2+")";
+    var foot = document.querySelector(".foot"); if(foot) foot.innerHTML = "Secured by " + c.brand.replace(/ ERP$/,"") + " &middot; <a href=\"/app\">ERP desk</a>";
+  })();
+
   var f = document.getElementById("f"), msg = document.getElementById("msg"), go = document.getElementById("go");
   function show(t, cls){ msg.textContent = t; msg.className = "msg " + (cls||""); }
   f.addEventListener("submit", async function(e){

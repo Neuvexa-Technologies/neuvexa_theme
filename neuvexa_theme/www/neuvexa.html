@@ -237,6 +237,7 @@ const barColor = i => i<2 ? "var(--blue)" : (i<4 ? "var(--purple)" : "var(--ambe
 async function load(){
   el("todayDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"});
   try{
+    // current user
     try{ const u = await api("/api/method/frappe.auth.get_logged_user"); if(u){ el("meName").textContent=u; } }catch(e){}
 
     const inv = await getList("Sales Invoice",
@@ -261,14 +262,16 @@ async function load(){
     const topCust = Object.keys(custMap).map(k=>({label:k,meta:AED(custMap[k]),v:custMap[k]})).sort((a,b)=>b.v-a.v).slice(0,5);
     renderBars("topCust", topCust, barColor);
 
+    // top items (read each invoice's own child items; child doctypes aren't listable via REST)
     try{
-      const items = await getList("Sales Invoice Item", ["item_name","amount","qty"], [["docstatus","=",1]], 0);
+      const docs = await Promise.all(inv.map(d=>fetch("/api/resource/Sales Invoice/"+encodeURIComponent(d.name),{credentials:"include"}).then(r=>r.json())));
       const im={}, iq={};
-      items.forEach(it=>{ im[it.item_name]=(im[it.item_name]||0)+(it.amount||0); iq[it.item_name]=(iq[it.item_name]||0)+(it.qty||0); });
+      docs.forEach(dc=>((dc.data&&dc.data.items)||[]).forEach(it=>{ im[it.item_name]=(im[it.item_name]||0)+(it.amount||0); iq[it.item_name]=(iq[it.item_name]||0)+(it.qty||0); }));
       const topI = Object.keys(im).map(k=>({label:k,meta:Math.round(iq[k])+" sold · "+AED(im[k]),v:im[k]})).sort((a,b)=>b.v-a.v).slice(0,5);
       renderBars("topItems", topI, barColor);
     }catch(e){ el("topItems").innerHTML='<div class="pr"><div class="tp"><b>No item data</b></div></div>'; }
 
+    // stock value
     try{
       const bins = await getList("Bin", ["stock_value"], null, 0);
       const sv = bins.reduce((a,b)=>a+(b.stock_value||0),0);

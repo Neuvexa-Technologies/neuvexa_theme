@@ -250,10 +250,12 @@ async function load(){
       el("kAP").textContent = AED(pinv.reduce((a,d)=>a+(d.outstanding_amount||0),0));
     }catch(e){ el("kAP").textContent="AED 0"; }
 
-    // stock value
+    // stock value — scoped to THIS company's warehouses (Bin has no company field)
     try{
+      const whs = await getList("Warehouse",["name"],[["company","=",COMPANY]],0);
+      const whSet = new Set(whs.map(w=>w.name));
       const bins = await getList("Bin",["stock_value","warehouse"],null);
-      const sv = bins.filter(b=>(b.warehouse||"").indexOf("GMA")>=0).reduce((a,b)=>a+(b.stock_value||0),0);
+      const sv = bins.filter(b=>whSet.has(b.warehouse)).reduce((a,b)=>a+(b.stock_value||0),0);
       el("kStock").textContent = AED(sv);
     }catch(e){ el("kStock").textContent="—"; }
 

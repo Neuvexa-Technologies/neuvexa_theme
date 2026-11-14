@@ -831,7 +831,12 @@
     + ".nx-ins-card.nx-sk .nx-ins-val,.nx-ins-card.nx-sk .nx-ins-note{color:transparent;background:linear-gradient(90deg,#eef1f6 25%,#e3e8f0 37%,#eef1f6 63%);background-size:400% 100%;animation:nxsh 1.3s ease infinite;border-radius:6px;}"
     + "html.nx-dark .nx-ins-card.nx-sk .nx-ins-val,html.nx-dark .nx-ins-card.nx-sk .nx-ins-note{background:linear-gradient(90deg,#1b2336 25%,#243049 37%,#1b2336 63%);background-size:400% 100%;}"
     + "@media(max-width:1000px){.nx-ins{grid-template-columns:repeat(2,1fr);}}"
-    + "@media(max-width:560px){.nx-ins{grid-template-columns:1fr;}}";
+    + "@media(max-width:560px){.nx-ins{grid-template-columns:1fr;}}"
+    + ".nx-ins .nx-ins-card{animation:nxUp .45s ease both;}"
+    + ".nx-ins .nx-ins-card:nth-child(2){animation-delay:.06s;}"
+    + ".nx-ins .nx-ins-card:nth-child(3){animation-delay:.12s;}"
+    + ".nx-ins .nx-ins-card:nth-child(4){animation-delay:.18s;}"
+    + ".nx-hero{animation:nxUp .4s ease both;}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
   }
   function applyDensity(){ try { document.documentElement.classList.toggle("nx-compact", localStorage.getItem("nx_compact")==="1"); } catch(e){} }
@@ -1039,6 +1044,7 @@
       +'<div class="kr"><span>Search anything</span><kbd>⌘ K</kbd></div>'
       +'<div class="kr"><span>Ask Neuvexa (AI)</span><kbd>⌘ J</kbd></div>'
       +'<div class="kr"><span>New invoice</span><kbd>N</kbd></div>'
+      +'<div class="kr"><span>Go to… (then D·I·C·Q·B·R)</span><kbd>G</kbd></div>'
       +'<div class="kr"><span>Toggle dark mode</span><kbd>⌘ ⇧ D</kbd></div>'
       +'<div class="kr"><span>Open a record</span><kbd>Click a row</kbd></div>'
       +'<div class="kr"><span>This panel</span><kbd>?</kbd></div>'
@@ -1330,6 +1336,25 @@
     }
   }
 
+  // ---- Power-user "g then key" quick navigation (Linear/Superhuman style) ----
+  var GONAV = { d:"/neuvexa", i:"/invoices", c:"/customers", q:"/quotations", b:"/bills",
+    u:"/suppliers", s:"/items", w:"/warehouses", p:"/payments", a:"/accounting", r:"/reports" };
+  function wireGoNav(){
+    var armed=false, timer=null;
+    document.addEventListener("keydown", function(e){
+      var tag=(e.target.tagName||"").toLowerCase();
+      if(tag==="input"||tag==="textarea"||e.target.isContentEditable) return;
+      if(e.metaKey||e.ctrlKey||e.altKey) return;
+      if(armed){
+        armed=false; clearTimeout(timer);
+        var dest=GONAV[(e.key||"").toLowerCase()];
+        if(dest){ e.preventDefault(); location.href=dest; }
+        return;
+      }
+      if(e.key==="g"||e.key==="G"){ armed=true; timer=setTimeout(function(){ armed=false; }, 1200); }
+    });
+  }
+
   function boot(){
     if(!guardAuth()) return;
     injectCSS();
@@ -1355,6 +1380,7 @@
     wireFab();
     wireEmptyStates();
     if(document.body) document.body.classList.add("nx-anim");
+    wireGoNav();
     setTimeout(wireCountUp, 300);
     setTimeout(wireSparkline, 500);
     setTimeout(wireInsights, 350);

@@ -1069,6 +1069,12 @@
   async function runQuery(q){
     var s=q.toLowerCase(), co=company();
     var money = function(n){ return AED(n||0); };
+    // greeting / help — friendly capabilities card
+    if(/^\s*(hi|hello|hey|yo|help|hiya|what can you|what do you|who are you|capabilities|options|commands|examples?)\b/.test(s)){
+      return {title:"Here's what I can do", note:"Ask me in plain English about "+co+". I read your live ERP data — try a chip below or type your own.",
+        rows:[{a:"Money in",b:"revenue, this week, avg invoice"},{a:"Who owes",b:"overdue, receivables, collection rate"},{a:"Due soon",b:"what's due this week"},{a:"Customers",b:"top customers, new this month"},{a:"Buying",b:"payables, top suppliers, biggest bill"},{a:"Stock",b:"low stock, how many items"}],
+        followups:["Revenue this month","Who’s overdue?","Due this week","Top customers"]};
+    }
     // revenue this month
     if(/revenu|sales|turnover|income/.test(s) && !/week|average|avg|biggest|largest|collect/.test(s)){
       var r=await rows("Sales Invoice",["grand_total"],[["company","=",co],["docstatus","=",1],["posting_date",">=",monthStart()]]);

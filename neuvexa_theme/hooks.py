@@ -19,4 +19,6 @@ app_logo_url = "/assets/neuvexa_theme/images/neuvexa_erp_logo.svg"
 website_redirects = [
     {"source": "/invoices", "target": "/neuvexa_invoices"},
     {"source": "/quotations", "target": "/neuvexa_quotations"},
+    # Site root lands on the Neuvexa dashboard (the JS auth-gate sends guests to the login)
+    {"source": "/", "target": "/neuvexa"},
 ]

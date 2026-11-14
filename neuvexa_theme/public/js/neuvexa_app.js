@@ -53,12 +53,40 @@
     var b = document.querySelector(".brand .txt b"); if (b && c.brand) b.textContent = c.brand;
     var s = document.querySelector(".brand .txt span"); if (s && c.tagline) s.textContent = c.tagline;
     try { document.title = document.title.replace(/Neuvexa ERP/g, c.brand); } catch(e){}
+    applyHead(c);
+  }
+
+  // ---- Branded <head>: favicon (recolours per brand), theme-color, meta -----
+  function faviconSVG(c){
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+      + '<rect width="48" height="48" rx="11" fill="'+c.accent+'"/>'
+      + '<path d="M24 11 L37 35 H11 Z" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linejoin="round"/>'
+      + '<circle cx="24" cy="11" r="3.4" fill="#ffffff"/>'
+      + '<circle cx="37" cy="35" r="3.4" fill="'+(c.accent2||c.accent)+'"/>'
+      + '<circle cx="11" cy="35" r="3.4" fill="#ffffff" opacity="0.85"/></svg>';
+  }
+  function metaTag(name){
+    var m = document.querySelector('meta[name="'+name+'"]');
+    if(!m){ m = document.createElement("meta"); m.setAttribute("name", name); document.head.appendChild(m); }
+    return m;
+  }
+  function applyHead(c){
+    c = c || brand();
+    try {
+      var href = "data:image/svg+xml," + encodeURIComponent(faviconSVG(c));
+      var link = document.querySelector('link[rel="icon"]');
+      if(!link){ link = document.createElement("link"); link.rel = "icon"; document.head.appendChild(link); }
+      link.type = "image/svg+xml"; link.href = href;
+      metaTag("theme-color").setAttribute("content", (typeof isDark==="function" && isDark()) ? "#0b1120" : "#ffffff");
+      var d = metaTag("description");
+      if(!d.getAttribute("content")) d.setAttribute("content", c.brand+" — a faster, AI-native way to run your business on a single live workspace.");
+    } catch(e){}
   }
 
   // ---- Dark "cockpit" mode ------------------------------------------------
   var LS_DARK = "nx_dark";
   function isDark(){ try { return localStorage.getItem(LS_DARK) === "1"; } catch(e){ return false; } }
-  function applyDark(){ document.documentElement.classList.toggle("nx-dark", isDark()); updateDarkBtn(); }
+  function applyDark(){ document.documentElement.classList.toggle("nx-dark", isDark()); updateDarkBtn(); if(typeof applyHead==="function") applyHead(); }
   function toggleDark(){ try { localStorage.setItem(LS_DARK, isDark() ? "0" : "1"); } catch(e){} applyDark(); }
   NX.toggleDark = toggleDark;
   var _darkBtn=null;
@@ -836,7 +864,22 @@
     + ".nx-ins .nx-ins-card:nth-child(2){animation-delay:.06s;}"
     + ".nx-ins .nx-ins-card:nth-child(3){animation-delay:.12s;}"
     + ".nx-ins .nx-ins-card:nth-child(4){animation-delay:.18s;}"
-    + ".nx-hero{animation:nxUp .4s ease both;}";
+    + ".nx-hero{animation:nxUp .4s ease both;}"
+    // branded text selection
+    + "::selection{background:color-mix(in srgb,var(--blue,#2563EB) 22%,transparent);color:inherit;}"
+    // premium thin scrollbars
+    + "*{scrollbar-width:thin;scrollbar-color:#c7cfdd transparent;}"
+    + "html.nx-dark *{scrollbar-color:#36415c transparent;}"
+    + "::-webkit-scrollbar{width:10px;height:10px;}"
+    + "::-webkit-scrollbar-track{background:transparent;}"
+    + "::-webkit-scrollbar-thumb{background:#c7cfdd;border-radius:999px;border:3px solid transparent;background-clip:content-box;}"
+    + "::-webkit-scrollbar-thumb:hover{background:#aab6cc;background-clip:content-box;}"
+    + "html.nx-dark ::-webkit-scrollbar-thumb{background:#36415c;background-clip:content-box;}"
+    + "html.nx-dark ::-webkit-scrollbar-thumb:hover{background:#44507040;background-clip:content-box;}"
+    // mobile: keep the AI-insights pill from orphaning under the greeting
+    + "@media(max-width:620px){.nx-hero{flex-direction:column;align-items:flex-start;gap:8px;}.nx-aibadge{order:-1;}}"
+    // honour reduced-motion for accessibility
+    + "@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
   }
   function applyDensity(){ try { document.documentElement.classList.toggle("nx-compact", localStorage.getItem("nx_compact")==="1"); } catch(e){} }

@@ -311,6 +311,10 @@
     async function search(q){
       if(!q){ results = recentResults().concat(ACTIONS()); sel=0; render(); return; }
       var out = [], ql = q.toLowerCase();
+      // Ask Neuvexa bridge — route a free-text query straight to the copilot
+      out.push({ group:"Ask Neuvexa", run:function(){ NX.ask(q); }, tint:"#2563EB",
+        icon:'<path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/>',
+        title:"Ask Neuvexa", sub:"“"+q+"”", meta:"AI" });
       ACTIONS().forEach(function(a){ if(a.title.toLowerCase().indexOf(ql)>=0 || (a.sub||"").toLowerCase().indexOf(ql)>=0) out.push(a); });
       await Promise.all(SEARCH.map(async function(s){
         try{
@@ -1188,8 +1192,12 @@
     if(a.followups&&a.followups.length) h+='<div class="chips" style="margin-top:9px;">'+a.followups.map(function(f){return '<div class="chip">'+esc(f)+'</div>';}).join("")+'</div>';
     return h;
   }
-  function openCopilot(){
-    if(document.querySelector(".nx-cop")){ document.querySelector(".nx-cop .foot input").focus(); return; }
+  function openCopilot(initialQuery){
+    if(document.querySelector(".nx-cop")){
+      var ex=document.querySelector(".nx-cop .foot input"); if(ex) ex.focus();
+      if(initialQuery && window.__nxAsk){ window.__nxAsk(initialQuery); }
+      return;
+    }
     var p=document.createElement("div"); p.className="nx-cop";
     p.innerHTML='<div class="ch"><div class="spark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/></svg></div>'
       +'<div><b>Ask Neuvexa</b><span>Answers from your live data</span></div><div class="x">&times;</div></div>'
@@ -1214,9 +1222,11 @@
     p.addEventListener("click", function(e){ var c=e.target.closest(".chip"); if(c){ inp.value=""; ask(c.textContent); } });
     p.querySelector("#nxcsend").addEventListener("click", function(){ var q=inp.value.trim(); inp.value=""; ask(q); });
     inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ var q=inp.value.trim(); inp.value=""; ask(q); } });
-    requestAnimationFrame(function(){ p.classList.add("show"); inp.focus(); });
+    window.__nxAsk=ask;  // allow external callers (insight chips, palette) to drive the copilot
+    requestAnimationFrame(function(){ p.classList.add("show"); inp.focus(); if(initialQuery){ ask(initialQuery); } });
   }
   NX.openCopilot = openCopilot;
+  NX.ask = function(q){ openCopilot(q); };
   function wireCopilot(){
     document.querySelectorAll(".topbar .ask, .nav a[href='#']").forEach(function(el){
       if((el.textContent||"").toLowerCase().indexOf("ask")>=0 || el.classList.contains("ask")){
@@ -1276,7 +1286,7 @@
     // avoid a double greeting: retire the static "Good morning…" subtitle
     var h1=document.querySelector("h1");
     if(h1){ var sub=h1.nextElementSibling; if(sub && sub.tagName==="P") sub.style.display="none"; }
-    function fill(k,val,note,sm,chipText,chipHref){
+    function fill(k,val,note,sm,chipText,chipAction){
       var c=strip.querySelector('[data-k="'+k+'"]'); if(!c) return;
       c.classList.remove("nx-sk");
       var v=c.querySelector(".nx-ins-val"); v.textContent=val; v.className="nx-ins-val"+(sm?" sm":"");
@@ -1284,7 +1294,8 @@
       if(chipText){
         var b=document.createElement("button"); b.className="nx-ins-chip";
         b.innerHTML=esc(chipText)+' <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-        b.addEventListener("click",function(){ location.href=chipHref; });
+        // chipAction: a function (e.g. open copilot) or a URL string to navigate to
+        b.addEventListener("click", (typeof chipAction==="function") ? chipAction : function(){ location.href=chipAction; });
         c.appendChild(b);
       }
     }
@@ -1309,7 +1320,7 @@
       var snap=document.getElementById("nxSnap");
       if(snap) snap.innerHTML='<b>'+AED(mtd)+'</b> revenue MTD <span class="nx-dot2"></span> '
         +inv.length+' invoice'+(inv.length===1?"":"s")+' <span class="nx-dot2"></span> <b>'+AED(out)+'</b> outstanding';
-      fill("collect", rate+"%", overdue+" overdue · "+AED(out)+" open", false, overdue?"Chase overdue":"View invoices", "/invoices");
+      fill("collect", rate+"%", overdue+" overdue · "+AED(out)+" open", false, overdue?"Chase overdue":"View invoices", overdue?function(){ NX.ask("who's overdue"); }:"/invoices");
       fill("week", AED(wk), wkN+" invoice"+(wkN===1?"":"s")+" since Mon", false, "View sales", "/invoices");
       fill("top", topName, topName==="—"?"No open receivables":topPct+"% of receivables", topName!=="—", "View customers", "/customers");
       fill("avg", AED(avg), "across "+inv.length+" invoice"+(inv.length===1?"":"s"), false, "Open reports", "/reports");

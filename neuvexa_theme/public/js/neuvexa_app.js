@@ -879,7 +879,13 @@
     // mobile: keep the AI-insights pill from orphaning under the greeting
     + "@media(max-width:620px){.nx-hero{flex-direction:column;align-items:flex-start;gap:8px;}.nx-aibadge{order:-1;}}"
     // honour reduced-motion for accessibility
-    + "@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}}";
+    + "@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}}"
+    // crisp keyboard focus rings (keyboard-only, suppressed on mouse click)
+    + "a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible,[role=button]:focus-visible,.chip:focus-visible,.nx-ins-chip:focus-visible,.kpi:focus-visible,.nx-ins-card:focus-visible,tr:focus-visible{outline:2px solid var(--blue,#2563EB);outline-offset:2px;border-radius:8px;}"
+    + ":focus:not(:focus-visible){outline:none;}"
+    // crisp type rendering + no grey tap-flash on mobile (premium polish)
+    + "html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}"
+    + "*{-webkit-tap-highlight-color:transparent;}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
   }
   function applyDensity(){ try { document.documentElement.classList.toggle("nx-compact", localStorage.getItem("nx_compact")==="1"); } catch(e){} }
@@ -927,7 +933,13 @@
     document.querySelectorAll(".kpis .kpi").forEach(function(k){
       var lab = (k.querySelector(".lab")||{}).textContent || ""; lab = lab.toLowerCase();
       var dest = null; map.forEach(function(m){ if(lab.indexOf(m[0])>=0 && !dest) dest = m[1]; });
-      if(dest){ k.style.cursor="pointer"; k.addEventListener("click", function(){ location.href = dest; }); }
+      if(dest){
+        k.style.cursor="pointer";
+        k.setAttribute("tabindex","0"); k.setAttribute("role","button");
+        k.setAttribute("aria-label", ((k.querySelector(".lab")||{}).textContent||"Open")+" — open");
+        k.addEventListener("click", function(){ location.href = dest; });
+        k.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); location.href = dest; } });
+      }
     });
   }
 

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in &middot; Neuvexa ERP</title>
+<style>
+  :root{
+    --blue:#2563EB; --blue-ink:#1e40af; --purple:#6d5ef5; --amber:#e9a23b;
+    --ink:#0f1b33; --muted:#8a94a6; --line:#e6eaf1; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  html,body{height:100%;}
+  body{
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    background:#070b16;color:var(--ink);position:relative;
+  }
+  /* animated aurora background */
+  .aurora{position:fixed;inset:-20%;z-index:0;filter:blur(70px);opacity:.9;}
+  .aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:float 18s ease-in-out infinite;}
+  .a1{width:46vw;height:46vw;left:-6vw;top:-8vw;background:radial-gradient(circle at 30% 30%,#2563EB,transparent 65%);}
+  .a2{width:42vw;height:42vw;right:-8vw;top:6vw;background:radial-gradient(circle at 60% 40%,#6d5ef5,transparent 65%);animation-delay:-5s;}
+  .a3{width:38vw;height:38vw;left:22vw;bottom:-14vw;background:radial-gradient(circle at 50% 50%,#1e9c8f,transparent 65%);animation-delay:-9s;}
+  .a4{width:30vw;height:30vw;right:14vw;bottom:-10vw;background:radial-gradient(circle at 50% 50%,#e9a23b,transparent 68%);animation-delay:-13s;opacity:.7;}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(4vw,3vw) scale(1.08);}66%{transform:translate(-3vw,2vw) scale(.96);}}
+  .grid{position:fixed;inset:0;z-index:1;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 45%,#000,transparent 75%);}
+
+  .wrap{position:relative;z-index:2;width:100%;max-width:410px;padding:22px;}
+  .brandline{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:22px;}
+  .brandline .tile{width:44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(37,99,235,.35);}
+  .brandline .tile svg{width:27px;height:27px;}
+  .brandline b{color:#fff;font-size:21px;font-weight:800;letter-spacing:.3px;display:block;line-height:1;}
+  .brandline span{color:#9fb0da;font-size:11.5px;letter-spacing:.4px;}
+
+  .card{background:rgba(255,255,255,.96);border:1px solid rgba(255,255,255,.5);border-radius:20px;padding:30px 28px 26px;box-shadow:0 30px 80px rgba(3,7,18,.55);backdrop-filter:blur(8px);}
+  .card h1{font-size:21px;font-weight:800;color:var(--ink);}
+  .card .sub{font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:22px;}
+  label{display:block;font-size:12px;font-weight:700;color:#5a6578;margin:14px 0 6px;}
+  input{width:100%;border:1px solid var(--line);border-radius:11px;padding:12px 13px;font-size:14px;color:var(--ink);outline:none;transition:border-color .12s,box-shadow .12s;}
+  input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.14);}
+  .btn{width:100%;margin-top:22px;border:none;border-radius:11px;padding:13px;font-size:14.5px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,#2563EB,#6d5ef5);box-shadow:0 10px 26px rgba(37,99,235,.4);transition:transform .08s,opacity .15s;}
+  .btn:hover{opacity:.95;}
+  .btn:active{transform:translateY(1px);}
+  .btn[disabled]{opacity:.6;cursor:default;}
+  .msg{margin-top:14px;font-size:12.5px;text-align:center;min-height:16px;}
+  .msg.err{color:#dc2626;}
+  .msg.ok{color:#16a34a;}
+  .foot{margin-top:18px;text-align:center;font-size:11.5px;color:#7f8aa0;}
+  .foot a{color:#9ec2ff;text-decoration:none;}
+</style>
+</head>
+<body>
+  <div class="aurora"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+  <div class="grid"></div>
+
+  <div class="wrap">
+    <div class="brandline">
+      <div class="tile"><svg viewBox="0 0 48 48" fill="none"><path d="M24 9 L38 36 H10 Z" stroke="#2563EB" stroke-width="2.6" fill="rgba(37,99,235,.18)"/><circle cx="24" cy="9" r="3.2" fill="#2563EB"/><circle cx="38" cy="36" r="3.2" fill="#6d5ef5"/><circle cx="10" cy="36" r="3.2" fill="#e9a23b"/></svg></div>
+      <div><b>Neuvexa ERP</b><span>by Neuvexa</span></div>
+    </div>
+
+    <div class="card">
+      <h1>Welcome back</h1>
+      <div class="sub">Sign in to your Neuvexa workspace.</div>
+      <form id="f" autocomplete="on">
+        <label for="usr">Email</label>
+        <input id="usr" name="usr" type="email" placeholder="you@company.com" autocomplete="username" required>
+        <label for="pwd">Password</label>
+        <input id="pwd" name="pwd" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" required>
+        <button class="btn" id="go" type="submit">Sign in</button>
+        <div class="msg" id="msg"></div>
+      </form>
+      <div class="foot">Secured by Neuvexa &middot; <a href="/app">ERP desk</a></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var f = document.getElementById("f"), msg = document.getElementById("msg"), go = document.getElementById("go");
+  function show(t, cls){ msg.textContent = t; msg.className = "msg " + (cls||""); }
+  f.addEventListener("submit", async function(e){
+    e.preventDefault();
+    var usr = document.getElementById("usr").value.trim();
+    var pwd = document.getElementById("pwd").value;
+    if(!usr || !pwd){ show("Enter your email and password.", "err"); return; }
+    go.disabled = true; go.textContent = "Signing in…"; show("");
+    try{
+      var body = new URLSearchParams(); body.set("usr", usr); body.set("pwd", pwd);
+      var r = await fetch("/api/method/login", { method:"POST", credentials:"include", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body: body.toString() });
+      if(r.ok){
+        show("Welcome — loading your workspace…", "ok");
+        var next = new URLSearchParams(location.search).get("redirect-to") || "/neuvexa";
+        setTimeout(function(){ location.href = next; }, 500);
+      } else {
+        show("Those credentials didn’t match. Please try again.", "err");
+        go.disabled = false; go.textContent = "Sign in";
+      }
+    }catch(err){
+      show("Could not reach the server. Try again.", "err");
+      go.disabled = false; go.textContent = "Sign in";
+    }
+  });
+  // if already signed in, skip straight to the dashboard
+  (async function(){
+    try{ var u = await (await fetch("/api/method/frappe.auth.get_logged_user",{credentials:"include"})).json();
+      if(u && u.message && u.message !== "Guest"){ location.href = "/neuvexa"; }
+    }catch(e){}
+  })();
+})();
+</script>
+</body>
+</html>

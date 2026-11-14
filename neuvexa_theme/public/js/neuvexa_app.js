@@ -742,8 +742,109 @@
     + ".nx-bell-menu .bi b{font-size:13px;font-weight:700;color:#1d2a44;display:block;}html.nx-dark .nx-bell-menu .bi b{color:var(--ink);}"
     + ".nx-bell-menu .bi span{font-size:11.5px;color:var(--muted,#8a94a6);}"
     + ".nx-bell-menu .bi .amt{margin-left:auto;font-size:12.5px;font-weight:800;color:#0f1b33;}html.nx-dark .nx-bell-menu .bi .amt{color:#fff;}"
-    + ".nx-bell-menu .be{padding:22px 16px;text-align:center;color:var(--muted,#8a94a6);font-size:13px;}";
+    + ".nx-bell-menu .be{padding:22px 16px;text-align:center;color:var(--muted,#8a94a6);font-size:13px;}"
+    // avatar / profile menu
+    + ".me{cursor:pointer;}"
+    + ".nx-prof{position:absolute;z-index:72;background:#fff;border:1px solid var(--line2,#e6eaf1);border-radius:14px;box-shadow:0 16px 44px rgba(16,24,40,.18);width:250px;overflow:hidden;padding:6px;}"
+    + "html.nx-dark .nx-prof{background:#111728;border-color:var(--line2);color:var(--ink);}"
+    + ".nx-prof .ph{padding:11px 12px 12px;border-bottom:1px solid var(--line,#edf0f5);margin-bottom:5px;}"
+    + ".nx-prof .ph b{font-size:13.5px;font-weight:800;color:var(--navy,#0f1b33);display:block;}html.nx-dark .nx-prof .ph b{color:#fff;}"
+    + ".nx-prof .ph span{font-size:11.5px;color:var(--muted,#8a94a6);}"
+    + ".nx-prof .pi{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:13px;color:#1d2a44;}html.nx-dark .nx-prof .pi{color:var(--ink2);}"
+    + ".nx-prof .pi:hover{background:var(--blue-soft,#eaf0fe);}html.nx-dark .nx-prof .pi:hover{background:#17213c;}"
+    + ".nx-prof .pi svg{width:16px;height:16px;stroke:#5a6578;}html.nx-dark .nx-prof .pi svg{stroke:#9aa6bd;}"
+    + ".nx-prof .pi .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}"
+    + ".nx-prof .pi .ck{margin-left:auto;color:var(--blue,#2563EB);font-weight:800;opacity:0;}"
+    + ".nx-prof .pi.on .ck{opacity:1;}"
+    + ".nx-prof .pg{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#9aa6b6;font-weight:800;padding:8px 11px 3px;}"
+    + ".nx-prof .pi.danger{color:#dc2626;}.nx-prof .pi.danger svg{stroke:#dc2626;}"
+    + ".nx-prof .sep{height:1px;background:var(--line,#edf0f5);margin:5px 0;}"
+    // quick-create FAB
+    + ".nx-fab{position:fixed;right:24px;bottom:24px;z-index:78;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue,#2563EB),var(--accent2,#6d5ef5));color:#fff;box-shadow:0 10px 30px rgba(37,99,235,.42);display:flex;align-items:center;justify-content:center;transition:transform .15s;}"
+    + ".nx-fab:hover{transform:translateY(-2px) scale(1.04);}"
+    + ".nx-fab svg{width:24px;height:24px;stroke:#fff;transition:transform .2s;}"
+    + ".nx-fab.open svg{transform:rotate(45deg);}"
+    + ".nx-fab-menu{position:fixed;right:24px;bottom:88px;z-index:78;display:flex;flex-direction:column;gap:9px;align-items:flex-end;}"
+    + ".nx-fab-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line2,#e6eaf1);border-radius:999px;padding:9px 15px;font-size:13px;font-weight:700;color:#1d2a44;cursor:pointer;box-shadow:0 8px 22px rgba(16,24,40,.16);transform:translateY(8px) scale(.96);opacity:0;transition:transform .16s,opacity .16s;}"
+    + "html.nx-dark .nx-fab-item{background:#141b2e;border-color:var(--line2);color:var(--ink);}"
+    + ".nx-fab-menu.show .nx-fab-item{transform:none;opacity:1;}"
+    + ".nx-fab-item svg{width:15px;height:15px;stroke:var(--blue,#2563EB);}"
+    + "@media(max-width:760px){.nx-fab{right:16px;bottom:16px;}.nx-fab-menu{right:16px;bottom:80px;}}";
     var st=document.createElement("style"); st.textContent=css; document.head.appendChild(st);
+  }
+
+  // ---- Clickable KPI cards (dashboard) ------------------------------------
+  function wireKpiNav(){
+    var map = [["revenue","/invoices"],["invoice","/invoices"],["outstanding","/invoices"],["receivable","/invoices"],["stock","/items"],["payable","/bills"],["customer","/customers"]];
+    document.querySelectorAll(".kpis .kpi").forEach(function(k){
+      var lab = (k.querySelector(".lab")||{}).textContent || ""; lab = lab.toLowerCase();
+      var dest = null; map.forEach(function(m){ if(lab.indexOf(m[0])>=0 && !dest) dest = m[1]; });
+      if(dest){ k.style.cursor="pointer"; k.addEventListener("click", function(){ location.href = dest; }); }
+    });
+  }
+
+  // ---- Avatar / profile menu ----------------------------------------------
+  function wireAvatar(){
+    var me = document.querySelector(".topbar .me"); if(!me) return;
+    var menu = null;
+    function close(){ if(menu){ menu.remove(); menu=null; } }
+    me.addEventListener("click", async function(e){
+      e.stopPropagation();
+      if(menu){ close(); return; }
+      var name = (me.querySelector(".l b")||{}).textContent || "Neuvexa User";
+      var email = ""; try{ var m=document.cookie.match(/(?:^|;\s*)user_id=([^;]+)/); email = m?decodeURIComponent(m[1]):""; }catch(err){}
+      menu = document.createElement("div"); menu.className = "nx-prof";
+      var brandRows = Object.keys(NX.brands).map(function(k){
+        var b = NX.brands[k];
+        return '<div class="pi '+(NX.brand===k?'on':'')+'" data-brand="'+k+'"><span class="dot" style="background:'+b.accent+'"></span>'+esc(b.brand)+'<span class="ck">&#10003;</span></div>';
+      }).join("");
+      menu.innerHTML = '<div class="ph"><b>'+esc(name)+'</b><span>'+esc(email)+'</span></div>'
+        + '<div class="pg">Brand</div>' + brandRows
+        + '<div class="sep"></div>'
+        + '<div class="pi" data-act="dark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>Toggle dark mode</div>'
+        + '<div class="pi" data-act="keys"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>Keyboard shortcuts</div>'
+        + '<div class="sep"></div>'
+        + '<div class="pi danger" data-act="logout"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Sign out</div>';
+      document.body.appendChild(menu);
+      var r = me.getBoundingClientRect();
+      menu.style.top = (r.bottom + 8) + "px"; menu.style.right = (window.innerWidth - r.right) + "px";
+      menu.addEventListener("click", async function(ev){
+        var pi = ev.target.closest(".pi"); if(!pi) return;
+        var brand = pi.getAttribute("data-brand");
+        if(brand){ NX.setBrand(brand); close(); return; }
+        var act = pi.getAttribute("data-act");
+        if(act==="dark"){ NX.toggleDark(); }
+        else if(act==="keys"){ close(); openKeys(); return; }
+        else if(act==="logout"){
+          close();
+          try{ var token = await NX.csrf(); await fetch("/api/method/logout",{method:"POST",credentials:"include",headers:{"X-Frappe-CSRF-Token":token}}); }catch(e){}
+          location.href = "/neuvexa_login";
+          return;
+        }
+        close();
+      });
+    });
+    document.addEventListener("click", close);
+  }
+
+  // ---- Quick-create floating button ---------------------------------------
+  function wireFab(){
+    if(document.querySelector(".nx-fab")) return;
+    var fab = document.createElement("button"); fab.className = "nx-fab"; fab.title = "Quick create";
+    fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+    var menu = document.createElement("div"); menu.className = "nx-fab-menu";
+    var inv = '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>';
+    var usr = '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>';
+    var itm = '<path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>';
+    menu.innerHTML = '<div class="nx-fab-item" data-r="sales-invoice"><svg viewBox="0 0 24 24" fill="none" stroke-width="2">'+inv+'</svg>New invoice</div>'
+      + '<div class="nx-fab-item" data-r="customer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2">'+usr+'</svg>New customer</div>'
+      + '<div class="nx-fab-item" data-r="item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2">'+itm+'</svg>New item</div>';
+    document.body.appendChild(menu); document.body.appendChild(fab);
+    var open = false;
+    function set(o){ open=o; fab.classList.toggle("open",o); menu.classList.toggle("show",o); }
+    fab.addEventListener("click", function(e){ e.stopPropagation(); set(!open); });
+    menu.addEventListener("click", function(e){ var it=e.target.closest(".nx-fab-item"); if(!it) return; set(false); NX.newDoc(it.getAttribute("data-r")); });
+    document.addEventListener("click", function(){ if(open) set(false); });
   }
 
   // ---- Skeleton loaders ---------------------------------------------------
@@ -1008,6 +1109,9 @@
     wireCollapse();
     wireSkeleton();
     wireBell();
+    wireKpiNav();
+    wireAvatar();
+    wireFab();
     if(document.body) document.body.classList.add("nx-anim");
     setTimeout(wireCountUp, 300);
   }

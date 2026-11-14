@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports &middot; Neuvexa ERP</title>
+<style>
+  :root{
+    --blue:#2563EB; --blue-soft:#eaf0fe; --blue-ink:#1e40af;
+    --purple:#6d5ef5; --purple-soft:#efecfe;
+    --amber:#e9a23b; --amber-soft:#fdf2df;
+    --green:#16a34a; --green-soft:#e7f6ee; --red:#ef4444;
+    --navy:#0f1b33;
+    --ink:#101828; --ink2:#1d2a44; --muted:#8a94a6; --muted2:#aeb6c4;
+    --line:#edf0f5; --line2:#e6eaf1; --bg:#f7f8fb; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{background:var(--bg);color:var(--ink);display:flex;min-height:100vh;font-size:14px;}
+  a{text-decoration:none;}
+
+  .sidebar{width:246px;background:linear-gradient(180deg,#132a6b 0%,#0f1f52 100%);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:11px;padding:18px 20px 16px;}
+  .brand .tile{width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand .tile svg{width:22px;height:22px;}
+  .brand .txt b{font-size:15.5px;font-weight:800;color:#fff;letter-spacing:.2px;display:block;line-height:1.1;}
+  .brand .txt span{font-size:10px;color:#9fb0da;letter-spacing:.3px;}
+  .nav{padding:6px 12px;flex:1;overflow:auto;}
+  .nav .group{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6f82b8;margin:16px 10px 6px;font-weight:700;}
+  .nav a{display:flex;align-items:center;gap:12px;padding:8.5px 12px;margin:2px 0;border-radius:9px;color:#c4d0ec;font-size:13.5px;font-weight:500;}
+  .nav a svg{width:18px;height:18px;stroke:#8fa0cc;flex-shrink:0;}
+  .nav a:hover{background:rgba(255,255,255,.07);color:#fff;}
+  .nav a.active{background:var(--blue);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.4);}
+  .nav a.active svg{stroke:#fff;}
+  .side-foot{padding:13px 20px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px;font-size:12.5px;color:#9fb0da;}
+  .side-foot svg{width:16px;height:16px;stroke:#9fb0da;}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{height:62px;background:#fff;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:14px;padding:0 22px;flex-shrink:0;}
+  .wswitch{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:10px;padding:7px 12px;min-width:230px;}
+  .wswitch .ic{width:26px;height:26px;border-radius:7px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;}
+  .wswitch .ic svg{width:15px;height:15px;stroke:var(--blue);}
+  .wswitch .l b{font-size:12.5px;font-weight:700;display:block;line-height:1.15;}
+  .wswitch .l span{font-size:10.5px;color:var(--muted);}
+  .wswitch .chev{margin-left:auto;color:var(--muted2);font-size:11px;}
+  .search{flex:1;max-width:460px;display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:9px 13px;color:var(--muted);font-size:13px;}
+  .search svg{width:15px;height:15px;stroke:var(--muted2);}
+  .search .kbd{margin-left:auto;font-size:10.5px;color:var(--muted2);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:13px;}
+  .ask{display:flex;align-items:center;gap:7px;background:var(--blue-soft);color:var(--blue-ink);border:none;border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;}
+  .ask svg{width:15px;height:15px;stroke:var(--blue);}
+  .bell{position:relative;width:38px;height:38px;border-radius:9px;border:1px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center;}
+  .bell svg{width:17px;height:17px;stroke:#5a6578;}
+  .bell .dot{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;}
+  .me{display:flex;align-items:center;gap:9px;}
+  .me .av{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .me .l b{font-size:12.5px;font-weight:700;display:block;line-height:1.15;}
+  .me .l span{font-size:10.5px;color:var(--muted);}
+
+  .content{padding:22px 28px;overflow:auto;}
+  .page-head{margin:2px 0 18px;}
+  .page-head h1{font-size:24px;font-weight:800;color:var(--navy);}
+  .page-head p{font-size:13.5px;color:var(--muted);margin-top:3px;}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px;}
+  .kpi{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+  .kpi .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .kpi .val{font-size:22px;font-weight:800;color:var(--navy);margin-top:8px;letter-spacing:-.5px;}
+
+  .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:18px;}
+  .panel{background:var(--card);border:1px solid var(--line2);border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);padding:18px 20px;}
+  .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+  .ph h3{font-size:14.5px;font-weight:700;color:var(--navy);}
+  .ph .psub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .bars{display:flex;align-items:flex-end;gap:14px;height:150px;padding-top:6px;}
+  .bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end;}
+  .bars .b .bar{width:100%;max-width:38px;border-radius:7px 7px 0 0;background:var(--blue);min-height:3px;}
+  .bars .b .lab{font-size:11px;color:var(--muted);}
+  .bars .b .v{font-size:11px;font-weight:700;color:var(--ink2);}
+
+  .aging .ar{padding:9px 0;}
+  .aging .ar:not(:last-child){border-bottom:1px solid var(--line);}
+  .aging .ar .tp{display:flex;align-items:baseline;justify-content:space-between;font-size:13px;margin-bottom:7px;}
+  .aging .ar .tp b{font-weight:600;color:var(--ink2);}
+  .aging .ar .tp .v{font-weight:700;}
+  .aging .ar .track{height:7px;border-radius:999px;background:#eef1f6;overflow:hidden;}
+  .aging .ar .track i{display:block;height:100%;border-radius:999px;}
+
+  .rh{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:4px 0 12px;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .rcard{background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:15px 16px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:10px;}
+  .rcard:hover{border-color:var(--blue);}
+  .rcard .ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+  .rcard .ic svg{width:17px;height:17px;}
+  .rcard b{font-size:13.5px;font-weight:700;color:var(--navy);}
+  .rcard span{font-size:11.5px;color:var(--muted);line-height:1.35;}
+  .t-blue{background:var(--blue-soft);} .t-blue svg{stroke:var(--blue);}
+  .t-green{background:var(--green-soft);} .t-green svg{stroke:var(--green);}
+  .t-amber{background:var(--amber-soft);} .t-amber svg{stroke:var(--amber);}
+  .t-purple{background:var(--purple-soft);} .t-purple svg{stroke:var(--purple);}
+  .src{position:fixed;bottom:10px;right:14px;font-size:10.5px;color:#9aa6b6;background:rgba(255,255,255,.8);padding:3px 9px;border-radius:7px;border:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="tile"><svg viewBox="0 0 48 48" fill="none"><path d="M24 9 L38 36 H10 Z" stroke="#2563EB" stroke-width="2.6" fill="rgba(37,99,235,.18)"/><circle cx="24" cy="9" r="3.2" fill="#2563EB"/><circle cx="38" cy="36" r="3.2" fill="#6d5ef5"/><circle cx="10" cy="36" r="3.2" fill="#e9a23b"/></svg></div>
+    <div class="txt"><b>Neuvexa ERP</b><span>by Neuvexa</span></div>
+  </div>
+  <nav class="nav">
+    <div class="group">Overview</div>
+    <a href="/neuvexa"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</a>
+    <a class="active" href="/reports"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+    <div class="group">Sales</div>
+    <a href="/invoices"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Invoices</a>
+    <a href="/customers"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Customers</a>
+    <a href="/quotations"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Quotations</a>
+    <div class="group">Purchase</div>
+    <a href="/bills"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M1 1h4l2.6 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>Bills</a>
+    <a href="/suppliers"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Suppliers</a>
+    <div class="group">Inventory</div>
+    <a href="/items"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>Items &amp; Stock</a>
+    <a href="/warehouses"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>Warehouses</a>
+    <div class="group">Finance</div>
+    <a href="/accounting"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Accounting</a>
+    <a href="/payments"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Payments</a>
+    <div class="group">AI</div>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/></svg>Ask Neuvexa</a>
+  </nav>
+  <div class="side-foot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>Collapse</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="wswitch"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><div class="l"><b>Gulf Mobile &amp; Accessories LLC</b><span>Company workspace</span></div><span class="chev">&#9662;</span></div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>Jump to&hellip; customers, invoices, items<span class="kbd">&#8984;K</span></div>
+    <div class="top-actions">
+      <button class="ask"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/></svg> Ask Neuvexa</button>
+      <div class="bell"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span class="dot">0</span></div>
+      <div class="me"><div class="av" id="meAv">NA</div><div class="l"><b id="meName">Neuvexa Admin</b><span>Owner</span></div></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-head"><h1>Reports</h1><p>A live snapshot of the business, plus the full report library.</p></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="lab">Revenue (MTD)</div><div class="val" id="kRev">&mdash;</div></div>
+      <div class="kpi"><div class="lab">Receivables</div><div class="val" id="kAR">&mdash;</div></div>
+      <div class="kpi"><div class="lab">Payables</div><div class="val" id="kAP">&mdash;</div></div>
+      <div class="kpi"><div class="lab">Stock Value</div><div class="val" id="kStock">&mdash;</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div><h3>Sales &mdash; last 6 months</h3><div class="psub">Submitted invoices by month</div></div></div>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="panel aging">
+        <div class="ph"><div><h3>Receivables aging</h3><div class="psub">Outstanding by age</div></div></div>
+        <div id="aging"></div>
+      </div>
+    </div>
+
+    <div class="rh">Report library</div>
+    <div class="cards">
+      <a class="rcard" href="/app/general-ledger"><div class="ic t-blue"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><b>General Ledger</b><span>Every posting, filterable by account &amp; date.</span></a>
+      <a class="rcard" href="/app/query-report/Trial Balance"><div class="ic t-purple"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3v18M3 7h18M3 17h18"/></svg></div><b>Trial Balance</b><span>Debits and credits across all accounts.</span></a>
+      <a class="rcard" href="/app/query-report/Profit and Loss Statement"><div class="ic t-green"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div><b>Profit &amp; Loss</b><span>Income vs expenses for the period.</span></a>
+      <a class="rcard" href="/app/query-report/Balance Sheet"><div class="ic t-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></div><b>Balance Sheet</b><span>Assets, liabilities and equity.</span></a>
+      <a class="rcard" href="/app/query-report/Accounts Receivable"><div class="ic t-blue"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><b>Accounts Receivable</b><span>What customers owe, by age.</span></a>
+      <a class="rcard" href="/app/query-report/Accounts Payable"><div class="ic t-amber"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><b>Accounts Payable</b><span>What you owe suppliers, by age.</span></a>
+      <a class="rcard" href="/app/query-report/Stock Balance"><div class="ic t-green"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div><b>Stock Balance</b><span>Quantity and value on hand by item.</span></a>
+      <a class="rcard" href="/app/query-report/Sales Register"><div class="ic t-purple"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div><b>Sales Register</b><span>Invoice-level sales with tax breakdown.</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="src" id="srcNote">Loading live data&hellip;</div>
+
+<script>
+const COMPANY = "Gulf Mobile & Accessories LLC";
+const AED = n => "AED " + (Math.round(n)).toLocaleString("en-US");
+const SHORT = n => { n=Math.round(n); if(n>=1000) return (n/1000).toFixed(n>=10000?0:1)+"k"; return ""+n; };
+const el = id => document.getElementById(id);
+
+async function getList(dt, fields, filters){
+  const q=new URLSearchParams();
+  q.set("fields", JSON.stringify(fields));
+  if(filters) q.set("filters", JSON.stringify(filters));
+  q.set("limit_page_length",0);
+  const r = await fetch("/api/resource/"+encodeURIComponent(dt)+"?"+q,{credentials:"include"});
+  if(!r.ok) throw new Error(dt+" -> "+r.status);
+  return (await r.json()).data;
+}
+
+function renderBars(months){
+  const max = Math.max.apply(null, months.map(m=>m.v).concat([1]));
+  el("bars").innerHTML = months.map(m=>{
+    const h = Math.max(3, Math.round(m.v/max*120));
+    return '<div class="b"><div class="v">'+(m.v?SHORT(m.v):"")+'</div><div class="bar" style="height:'+h+'px"></div><div class="lab">'+m.lab+'</div></div>';
+  }).join("");
+}
+function renderAging(buckets){
+  const total = buckets.reduce((a,b)=>a+b.v,0) || 1;
+  const colors = ["var(--green)","var(--blue)","var(--amber)","var(--red)"];
+  el("aging").innerHTML = buckets.map((b,i)=>
+    '<div class="ar"><div class="tp"><b>'+b.lab+'</b><span class="v">'+AED(b.v)+'</span></div>'+
+    '<div class="track"><i style="width:'+Math.max(2,Math.round(b.v/total*100))+'%;background:'+colors[i]+'"></i></div></div>'
+  ).join("");
+}
+
+async function load(){
+  try{
+    try{ const u = await fetch("/api/method/frappe.auth.get_logged_user",{credentials:"include"}).then(r=>r.json()); if(u.message) el("meName").textContent=u.message; }catch(e){}
+
+    const inv = await getList("Sales Invoice",
+      ["grand_total","outstanding_amount","posting_date","due_date","status"],
+      [["company","=",COMPANY],["docstatus","=",1]]);
+
+    const now = new Date();
+    const ym = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+    let revMTD=0, ar=0;
+    inv.forEach(d=>{ if((d.posting_date||"").slice(0,7)===ym) revMTD+=d.grand_total||0; ar+=d.outstanding_amount||0; });
+    el("kRev").textContent = AED(revMTD);
+    el("kAR").textContent = AED(ar);
+
+    // sales last 6 months
+    const months=[];
+    for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push({key:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"), lab:d.toLocaleDateString("en-GB",{month:"short"}), v:0}); }
+    const mmap={}; months.forEach(m=>mmap[m.key]=m);
+    inv.forEach(d=>{ const k=(d.posting_date||"").slice(0,7); if(mmap[k]) mmap[k].v+=d.grand_total||0; });
+    renderBars(months);
+
+    // AR aging
+    const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const buckets=[{lab:"Current",v:0},{lab:"1–30 days",v:0},{lab:"31–60 days",v:0},{lab:"60+ days",v:0}];
+    inv.forEach(d=>{
+      const o=d.outstanding_amount||0; if(o<=0.5) return;
+      let days=0; if(d.due_date){ days=Math.floor((today-new Date(d.due_date))/86400000); }
+      if(days<=0) buckets[0].v+=o; else if(days<=30) buckets[1].v+=o; else if(days<=60) buckets[2].v+=o; else buckets[3].v+=o;
+    });
+    renderAging(buckets);
+
+    // payables
+    try{
+      const pinv = await getList("Purchase Invoice",["outstanding_amount"],[["company","=",COMPANY],["docstatus","=",1]]);
+      el("kAP").textContent = AED(pinv.reduce((a,d)=>a+(d.outstanding_amount||0),0));
+    }catch(e){ el("kAP").textContent="AED 0"; }
+
+    // stock value
+    try{
+      const bins = await getList("Bin",["stock_value","warehouse"],null);
+      const sv = bins.filter(b=>(b.warehouse||"").indexOf("GMA")>=0).reduce((a,b)=>a+(b.stock_value||0),0);
+      el("kStock").textContent = AED(sv);
+    }catch(e){ el("kStock").textContent="—"; }
+
+    el("srcNote").textContent = "Live · Neuvexa ERP · "+COMPANY;
+  }catch(e){
+    el("srcNote").textContent = "Could not load live data ("+e.message+")";
+  }
+}
+load();
+</script>
+</body>
+</html>

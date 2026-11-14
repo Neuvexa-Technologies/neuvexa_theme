@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoices &middot; Neuvexa ERP</title>
+<style>
+  :root{
+    --blue:#2563EB; --blue-soft:#eaf0fe; --blue-ink:#1e40af;
+    --purple:#6d5ef5; --amber:#e9a23b; --green:#16a34a; --red:#ef4444;
+    --navy:#0f1b33;
+    --ink:#101828; --ink2:#1d2a44; --muted:#8a94a6; --muted2:#aeb6c4;
+    --line:#edf0f5; --line2:#e6eaf1; --bg:#f7f8fb; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{background:var(--bg);color:var(--ink);display:flex;min-height:100vh;font-size:14px;}
+  a{text-decoration:none;}
+
+  .sidebar{width:246px;background:linear-gradient(180deg,#132a6b 0%,#0f1f52 100%);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:11px;padding:18px 20px 16px;}
+  .brand .tile{width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand .tile svg{width:22px;height:22px;}
+  .brand .txt b{font-size:15.5px;font-weight:800;color:#fff;letter-spacing:.2px;display:block;line-height:1.1;}
+  .brand .txt span{font-size:10px;color:#9fb0da;letter-spacing:.3px;}
+  .nav{padding:6px 12px;flex:1;overflow:auto;}
+  .nav .group{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#6f82b8;margin:16px 10px 6px;font-weight:700;}
+  .nav a{display:flex;align-items:center;gap:12px;padding:8.5px 12px;margin:2px 0;border-radius:9px;color:#c4d0ec;font-size:13.5px;font-weight:500;}
+  .nav a svg{width:18px;height:18px;stroke:#8fa0cc;flex-shrink:0;}
+  .nav a:hover{background:rgba(255,255,255,.07);color:#fff;}
+  .nav a.active{background:var(--blue);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.4);}
+  .nav a.active svg{stroke:#fff;}
+  .side-foot{padding:13px 20px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px;font-size:12.5px;color:#9fb0da;}
+  .side-foot svg{width:16px;height:16px;stroke:#9fb0da;}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{height:62px;background:#fff;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:14px;padding:0 22px;flex-shrink:0;}
+  .wswitch{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:10px;padding:7px 12px;min-width:230px;}
+  .wswitch .ic{width:26px;height:26px;border-radius:7px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;}
+  .wswitch .ic svg{width:15px;height:15px;stroke:var(--blue);}
+  .wswitch .l b{font-size:12.5px;font-weight:700;display:block;line-height:1.15;}
+  .wswitch .l span{font-size:10.5px;color:var(--muted);}
+  .wswitch .chev{margin-left:auto;color:var(--muted2);font-size:11px;}
+  .search{flex:1;max-width:460px;display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:9px 13px;color:var(--muted);font-size:13px;}
+  .search svg{width:15px;height:15px;stroke:var(--muted2);}
+  .search .kbd{margin-left:auto;font-size:10.5px;color:var(--muted2);border:1px solid var(--line2);border-radius:5px;padding:1px 6px;}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:13px;}
+  .ask{display:flex;align-items:center;gap:7px;background:var(--blue-soft);color:var(--blue-ink);border:none;border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;}
+  .ask svg{width:15px;height:15px;stroke:var(--blue);}
+  .bell{position:relative;width:38px;height:38px;border-radius:9px;border:1px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center;}
+  .bell svg{width:17px;height:17px;stroke:#5a6578;}
+  .bell .dot{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 5px;}
+  .me{display:flex;align-items:center;gap:9px;}
+  .me .av{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .me .l b{font-size:12.5px;font-weight:700;display:block;line-height:1.15;}
+  .me .l span{font-size:10.5px;color:var(--muted);}
+
+  .content{padding:22px 28px;overflow:auto;}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;margin:2px 0 18px;}
+  .page-head h1{font-size:24px;font-weight:800;color:var(--navy);}
+  .page-head p{font-size:13.5px;color:var(--muted);margin-top:3px;}
+  .acts{display:flex;gap:10px;}
+  .btn{border:1px solid var(--line2);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:var(--ink2);display:flex;align-items:center;gap:7px;}
+  .btn svg{width:15px;height:15px;stroke:#5a6578;}
+  .btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .btn.primary svg{stroke:#fff;}
+
+  .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .finder{flex:1;max-width:340px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line2);border-radius:10px;padding:8px 12px;}
+  .finder svg{width:15px;height:15px;stroke:var(--muted2);}
+  .finder input{border:none;outline:none;flex:1;font-size:13px;color:var(--ink);background:transparent;}
+  .pills{display:flex;gap:8px;}
+  .pill-f{border:1px solid var(--line2);background:#fff;color:var(--ink2);border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .pill-f.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+  .panel{background:var(--card);border:1px solid var(--line2);border-radius:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:13px 18px;border-bottom:1px solid var(--line2);background:#fbfcfe;}
+  th.r, td.r{text-align:right;}
+  tbody td{padding:13px 18px;font-size:13px;border-bottom:1px solid var(--line);color:var(--ink2);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover td{background:#f7f9fc;}
+  td .inv{font-weight:700;color:var(--navy);}
+  td .amt{font-weight:700;}
+  .chip{display:inline-block;padding:3px 11px;border-radius:999px;font-size:11px;font-weight:700;}
+  .chip.paid{background:rgba(22,163,74,.12);color:var(--green);}
+  .chip.due{background:rgba(233,162,59,.16);color:#a9792a;}
+  .chip.over{background:rgba(239,68,68,.12);color:var(--red);}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+  .src{position:fixed;bottom:10px;right:14px;font-size:10.5px;color:#9aa6b6;background:rgba(255,255,255,.8);padding:3px 9px;border-radius:7px;border:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="tile"><svg viewBox="0 0 48 48" fill="none"><path d="M24 9 L38 36 H10 Z" stroke="#2563EB" stroke-width="2.6" fill="rgba(37,99,235,.18)"/><circle cx="24" cy="9" r="3.2" fill="#2563EB"/><circle cx="38" cy="36" r="3.2" fill="#6d5ef5"/><circle cx="10" cy="36" r="3.2" fill="#e9a23b"/></svg></div>
+    <div class="txt"><b>Neuvexa ERP</b><span>by Neuvexa</span></div>
+  </div>
+  <nav class="nav">
+    <div class="group">Overview</div>
+    <a href="/neuvexa"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</a>
+    <a href="/app/query-report"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+    <div class="group">Sales</div>
+    <a class="active" href="/invoices"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Invoices</a>
+    <a href="/app/customer"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Customers</a>
+    <a href="/app/quotation"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Quotations</a>
+    <div class="group">Purchase</div>
+    <a href="/app/purchase-invoice"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M1 1h4l2.6 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>Bills</a>
+    <a href="/app/supplier"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Suppliers</a>
+    <div class="group">Inventory</div>
+    <a href="/app/item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg>Items &amp; Stock</a>
+    <a href="/app/warehouse"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>Warehouses</a>
+    <div class="group">Finance</div>
+    <a href="/app/account"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Accounting</a>
+    <a href="/app/payment-entry"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Payments</a>
+    <div class="group">AI</div>
+    <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/></svg>Ask Neuvexa</a>
+  </nav>
+  <div class="side-foot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>Collapse</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="wswitch"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><div class="l"><b>Gulf Mobile &amp; Accessories LLC</b><span>Company workspace</span></div><span class="chev">&#9662;</span></div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>Jump to&hellip; customers, invoices, items<span class="kbd">&#8984;K</span></div>
+    <div class="top-actions">
+      <button class="ask"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4z"/></svg> Ask Neuvexa</button>
+      <div class="bell"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span class="dot">0</span></div>
+      <div class="me"><div class="av" id="meAv">NA</div><div class="l"><b id="meName">Neuvexa Admin</b><span>Owner</span></div></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-head">
+      <div><h1>Invoices</h1><p>All sales invoices for this company.</p></div>
+      <div class="acts">
+        <a class="btn" href="/app/sales-invoice/view/report"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg> Report view</a>
+        <a class="btn primary" href="/app/sales-invoice/new"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> New Invoice</a>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="finder"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" placeholder="Search invoice or customer&hellip;"></div>
+      <div class="pills" id="pills">
+        <button class="pill-f on" data-f="all">All <span id="cAll">0</span></button>
+        <button class="pill-f" data-f="paid">Paid <span id="cPaid">0</span></button>
+        <button class="pill-f" data-f="due">Due <span id="cDue">0</span></button>
+        <button class="pill-f" data-f="over">Overdue <span id="cOver">0</span></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Due</th><th class="r">Amount</th><th class="r">Outstanding</th><th>Status</th></tr></thead>
+        <tbody id="rows"><tr><td colspan="7" class="empty">Loading invoices&hellip;</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="src" id="srcNote">Loading live data&hellip;</div>
+
+<script>
+const COMPANY = "Gulf Mobile & Accessories LLC";
+const AED = n => "AED " + (Math.round(n)).toLocaleString("en-US");
+const el = id => document.getElementById(id);
+let ALL = [], filt = "all", term = "";
+
+function cls(d){
+  const s=(d.status||"").toLowerCase();
+  if(s.indexOf("overdue")>=0) return "over";
+  if((d.outstanding_amount||0)>0.5) return "due";
+  return "paid";
+}
+function fmtDate(s){ if(!s) return "&mdash;"; const p=s.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; }
+
+function draw(){
+  const rows = ALL.filter(d=>{
+    if(filt!=="all" && cls(d)!==filt) return false;
+    if(term && (d.name+" "+d.customer).toLowerCase().indexOf(term)<0) return false;
+    return true;
+  });
+  if(!rows.length){ el("rows").innerHTML='<tr><td colspan="7" class="empty">No invoices match.</td></tr>'; return; }
+  el("rows").innerHTML = rows.map(d=>{
+    const c=cls(d); const label = c==="paid"?"Paid":(c==="over"?"Overdue":"Due");
+    return '<tr onclick="location.href=\'/app/sales-invoice/'+encodeURIComponent(d.name)+'\'">'+
+      '<td><span class="inv">'+d.name+'</span></td>'+
+      '<td>'+(d.customer||"")+'</td>'+
+      '<td>'+fmtDate(d.posting_date)+'</td>'+
+      '<td>'+fmtDate(d.due_date)+'</td>'+
+      '<td class="r amt">'+AED(d.grand_total||0)+'</td>'+
+      '<td class="r">'+((d.outstanding_amount||0)>0.5?AED(d.outstanding_amount):'&mdash;')+'</td>'+
+      '<td><span class="chip '+c+'">'+label+'</span></td></tr>';
+  }).join("");
+}
+
+async function load(){
+  try{
+    try{ const u = await fetch("/api/method/frappe.auth.get_logged_user",{credentials:"include"}).then(r=>r.json()); if(u.message) el("meName").textContent=u.message; }catch(e){}
+    const q = new URLSearchParams();
+    q.set("fields", JSON.stringify(["name","customer","posting_date","due_date","grand_total","outstanding_amount","status"]));
+    q.set("filters", JSON.stringify([["company","=",COMPANY],["docstatus","=",1]]));
+    q.set("order_by", "posting_date desc");
+    q.set("limit_page_length", 0);
+    const r = await fetch("/api/resource/Sales Invoice?"+q.toString(), {credentials:"include"});
+    if(!r.ok) throw new Error("Sales Invoice -> "+r.status);
+    ALL = (await r.json()).data;
+    let p=0,du=0,o=0; ALL.forEach(d=>{ const c=cls(d); if(c==="paid")p++; else if(c==="over")o++; else du++; });
+    el("cAll").textContent=ALL.length; el("cPaid").textContent=p; el("cDue").textContent=du; el("cOver").textContent=o;
+    draw();
+    el("srcNote").textContent = "Live · Neuvexa ERP · "+COMPANY;
+  }catch(e){
+    el("rows").innerHTML='<tr><td colspan="7" class="empty">Could not load invoices ('+e.message+') &mdash; sign in to the ERP first.</td></tr>';
+    el("srcNote").textContent = "Could not load live data";
+  }
+}
+el("q").addEventListener("input", e=>{ term=e.target.value.toLowerCase(); draw(); });
+el("pills").addEventListener("click", e=>{ const b=e.target.closest(".pill-f"); if(!b) return; filt=b.dataset.f; [...document.querySelectorAll(".pill-f")].forEach(x=>x.classList.toggle("on", x===b)); draw(); });
+load();
+</script>
+</body>
+</html>
